@@ -1,106 +1,203 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using TechStore.Constants;
 using TechStore.DTOs;
 using TechStore.Interfaces;
 using TechStore.Models;
-using TechStore.Services;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
 
 namespace TechStore.Controllers
 {
+    [Authorize]
     public class ProductsController : Controller
     {
         private readonly IProductQueries _productService;
         private readonly IProductApplicationService _productApplicationService;
         private readonly ICategoryQueries _categoryService;
         private readonly IProductLifecycle _productLifecycle;
+        private readonly IAuthorizationService _authorizationService;
+        private readonly ILogger<ProductsController> _logger;
 
         public ProductsController(
             IProductQueries productService,
             IProductApplicationService productApplicationService,
             ICategoryQueries categoryService,
-            IProductLifecycle productLifecycle)
+            IProductLifecycle productLifecycle,
+            IAuthorizationService authorizationService,
+            ILogger<ProductsController> logger)
         {
             _productService = productService;
             _productApplicationService = productApplicationService;
             _categoryService = categoryService;
             _productLifecycle = productLifecycle;
+            _authorizationService = authorizationService;
+            _logger = logger;
         }
 
-        public async Task<IActionResult> Index()
+        [Authorize(Policy = AppPermissions.ProductsRead)]
+        public async Task<IActionResult> Index(Guid? categoryId = null)
         {
-            var products = await _productService.GetAllAsync();
-            return View(products);
+            var canManageLifecycle = await CanManageLifecycleAsync();
+            var products = canManageLifecycle
+                ? await _productService.GetAllAsync()
+                : await _productService.GetAllActiveAsync();
+
+            if (categoryId.HasValue && categoryId.Value != Guid.Empty)
+            {
+                products = products
+                    .Where(product => product.Categories.Any(category =>
+                        category.Id == categoryId.Value &&
+                        (canManageLifecycle || category.IsActive)))
+                    .ToList();
+            }
+
+            ViewBag.SelectedCategoryId = categoryId;
+            ViewBag.Categories = (await _categoryService.GetAllActiveAsync())
+                .OrderBy(category => category.Name)
+                .ToList();
+
+            var productList = products as List<Product> ?? products.ToList();
+
+            _logger.LogInformation(
+                "Usuario {User} consultó productos (Total: {Count}, CategoryId: {CategoryId}).",
+                GetCurrentUserName(),
+                productList.Count,
+                categoryId);
+
+            return View(productList);
         }
 
+        [Authorize(Policy = AppPermissions.ProductsRead)]
         public async Task<IActionResult> Details(Guid id)
         {
             var product = await _productService.GetByIdWithDetailsAsync(id);
             if (product == null)
             {
+                _logger.LogWarning(
+                    "Producto {ProductId} no encontrado al consultar detalles por {User}.",
+                    id,
+                    GetCurrentUserName());
                 return NotFound();
             }
+
+            var canManageLifecycle = await CanManageLifecycleAsync();
+            if (!product.IsActive && !canManageLifecycle)
+            {
+                _logger.LogWarning(
+                    "Acceso denegado: usuario {User} intentó ver el producto inactivo {ProductId}.",
+                    GetCurrentUserName(),
+                    id);
+                return Forbid();
+            }
+
+            _logger.LogInformation(
+                "Usuario {User} consultó el detalle del producto {ProductId} ({ProductName}).",
+                GetCurrentUserName(),
+                id,
+                product.Name);
 
             return View(product);
         }
 
+        [Authorize(Policy = AppPermissions.ProductsCreate)]
         public async Task<IActionResult> Create()
         {
-            ViewBag.Categories = await _categoryService.GetAllActiveAsync();
+            await PopulateProductOptionsAsync();
             return View();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = AppPermissions.ProductsCreate)]
         public async Task<IActionResult> Create(ProductInput product, List<Guid>? selectedCategoryIds, ICollection<IFormFile>? images)
         {
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning(
+                    "Intento de creación de producto inválido por {User}. Errores: {ErrorCount}.",
+                    GetCurrentUserName(),
+                    ModelState.ErrorCount);
                 await PopulateProductOptionsAsync(selectedCategoryIds);
-                return View(new Product(product.Name, product.Description, product.Price, product.Stock, product.Featured, product.IsActive));
+                return View(BuildProductPreview(product));
             }
 
             try
             {
-                await _productApplicationService.CreateAsync(product, selectedCategoryIds, images);
-                TempData["Success"] = "Producto creado correctamente.";
+                var createdProduct = await _productApplicationService.CreateAsync(product, selectedCategoryIds, images);
+                _logger.LogInformation(
+                    "Producto {ProductId} ({ProductName}) creado por {User}.",
+                    createdProduct.Id,
+                    createdProduct.Name,
+                    GetCurrentUserName());
+
+                TempData["SuccessMessage"] = "Producto creado correctamente.";
                 return RedirectToAction(nameof(Index));
             }
             catch (ArgumentException ex)
             {
-                ModelState.AddModelError(nameof(selectedCategoryIds), ex.Message);
+                _logger.LogWarning(
+                    ex,
+                    "Error de validación al crear el producto {ProductName} por {User}.",
+                    product.Name,
+                    GetCurrentUserName());
+
+                ModelState.AddModelError(string.Empty, ex.Message);
                 await PopulateProductOptionsAsync(selectedCategoryIds);
-                return View(new Product(product.Name, product.Description, product.Price, product.Stock, product.Featured, product.IsActive));
+                return View(BuildProductPreview(product));
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Producto creado, pero ocurrió un error con las imágenes: {ex.Message}";
-                return RedirectToAction(nameof(Index));
+                _logger.LogError(
+                    ex,
+                    "Error inesperado al crear el producto {ProductName} por {User}.",
+                    product.Name,
+                    GetCurrentUserName());
+
+                ModelState.AddModelError(string.Empty, "Ocurrió un error inesperado al crear el producto. Por favor, inténtalo nuevamente.");
+                await PopulateProductOptionsAsync(selectedCategoryIds);
+                return View(BuildProductPreview(product));
             }
         }
 
+        [Authorize(Policy = AppPermissions.ProductsEdit)]
         public async Task<IActionResult> Edit(Guid id)
         {
             var product = await _productService.GetByIdWithDetailsAsync(id);
             if (product == null)
             {
+                _logger.LogWarning(
+                    "Producto {ProductId} no encontrado al abrir edición por {User}.",
+                    id,
+                    GetCurrentUserName());
                 return NotFound();
             }
 
-            ViewBag.Categories = await _categoryService.GetAllAsync();
+            await PopulateProductOptionsAsync(
+                product.Categories.Select(category => category.Id),
+                includeInactiveCategories: true);
+
             return View(product);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [Authorize(Policy = AppPermissions.ProductsEdit)]
         public async Task<IActionResult> Edit(Guid id, ProductInput product, List<Guid>? selectedCategoryIds, ICollection<IFormFile>? images)
         {
             var targetId = id != Guid.Empty ? id : product.Id;
             if (targetId == Guid.Empty)
             {
                 return NotFound();
+            }
+
+            if (!ModelState.IsValid)
+            {
+                _logger.LogWarning(
+                    "Intento de edición inválida del producto {ProductId} por {User}. Errores: {ErrorCount}.",
+                    targetId,
+                    GetCurrentUserName(),
+                    ModelState.ErrorCount);
+
+                return await BuildEditValidationViewAsync(targetId, product, selectedCategoryIds);
             }
 
             try
@@ -110,115 +207,306 @@ namespace TechStore.Controllers
                     product,
                     selectedCategoryIds ?? new List<Guid>(),
                     images);
+
                 if (updatedProduct == null)
                 {
+                    _logger.LogWarning(
+                        "Producto {ProductId} no encontrado al actualizar por {User}.",
+                        targetId,
+                        GetCurrentUserName());
                     return NotFound();
                 }
 
-                TempData["Success"] = images != null && images.Count > 0
+                _logger.LogInformation(
+                    "Producto {ProductId} ({ProductName}) actualizado por {User}.",
+                    targetId,
+                    updatedProduct.Name,
+                    GetCurrentUserName());
+
+                TempData["SuccessMessage"] = images != null && images.Count > 0
                     ? $"Producto e imágenes ({images.Count}) actualizados correctamente."
                     : "Producto actualizado correctamente.";
+
+                return RedirectToAction(nameof(Edit), new { id = targetId });
             }
             catch (ArgumentException ex)
             {
-                ModelState.AddModelError(nameof(selectedCategoryIds), ex.Message);
-                var existingProduct = await _productService.GetByIdWithDetailsAsync(targetId);
-                if (existingProduct == null)
-                {
-                    return NotFound();
-                }
+                _logger.LogWarning(
+                    ex,
+                    "Error de validación al actualizar el producto {ProductId} por {User}.",
+                    targetId,
+                    GetCurrentUserName());
 
-                existingProduct.UpdateDetails(product.Name, product.Description, product.Price, product.Stock, product.Featured);
-                ViewBag.SelectedCategoryIds = selectedCategoryIds ?? new List<Guid>();
-                await PopulateProductOptionsAsync(selectedCategoryIds);
-                return View(existingProduct);
+                ModelState.AddModelError(string.Empty, ex.Message);
+                return await BuildEditValidationViewAsync(targetId, product, selectedCategoryIds);
             }
             catch (Exception ex)
             {
-                TempData["Error"] = "Información del producto guardada, pero hubo un error con las imágenes: " + ex.Message;
+                _logger.LogError(
+                    ex,
+                    "Error inesperado al actualizar el producto {ProductId} por {User}.",
+                    targetId,
+                    GetCurrentUserName());
+
+                TempData["ErrorMessage"] = "Ocurrió un error inesperado al actualizar el producto. Por favor, inténtalo nuevamente.";
+                return RedirectToAction(nameof(Edit), new { id = targetId });
             }
-
-            return RedirectToAction(nameof(Edit), new
-            {
-                id = targetId
-            });
-        }
-
-        private async Task PopulateProductOptionsAsync(IEnumerable<Guid>? selectedCategoryIds = null)
-        {
-            ViewBag.Categories = await _categoryService.GetAllActiveAsync();
-            ViewBag.SelectedCategoryIds = selectedCategoryIds ?? Enumerable.Empty<Guid>();
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Deactivate(Guid id)
-        {
-            await _productLifecycle.DeleteAsync(id);
-            return RedirectToAction(nameof(Index));
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Restore(Guid id)
-        {
-            await _productLifecycle.RestoreAsync(id);
-            return RedirectToAction(nameof(Index));
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
+        [Authorize(Policy = AppPermissions.ProductsEdit)]
         public async Task<IActionResult> AddImages(Guid id, ICollection<IFormFile> images)
         {
+            var existingProduct = await _productService.GetByIdWithDetailsAsync(id);
+            if (existingProduct == null)
+            {
+                _logger.LogWarning(
+                    "Producto {ProductId} no encontrado al intentar subir imágenes por {User}.",
+                    id,
+                    GetCurrentUserName());
+                return NotFound();
+            }
+
+            if (images == null || images.Count == 0)
+            {
+                TempData["ErrorMessage"] = "Debes seleccionar al menos una imagen.";
+                return RedirectToAction(nameof(Edit), new { id });
+            }
+
             try
             {
-                if (images == null || images.Count == 0)
-                {
-                    TempData["Error"] = "Debes seleccionar al menos una imagen.";
-                    return RedirectToAction(nameof(Edit), new
-                    {
-                        id
-                    });
-                }
-
                 await _productApplicationService.AddImagesAsync(id, images);
-                TempData["Success"] = $"Se han subido {images.Count} imagen(es) correctamente.";
-                return RedirectToAction(nameof(Edit), new
-                {
-                    id
-                });
+                _logger.LogInformation(
+                    "Se subieron {ImageCount} imagen(es) al producto {ProductId} por {User}.",
+                    images.Count,
+                    id,
+                    GetCurrentUserName());
+
+                TempData["SuccessMessage"] = $"Se han subido {images.Count} imagen(es) correctamente.";
+            }
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Archivo inválido al subir imágenes para el producto {ProductId} por {User}.",
+                    id,
+                    GetCurrentUserName());
+
+                TempData["ErrorMessage"] = ex.Message;
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error al subir imágenes: {ex.Message}";
-                return RedirectToAction(nameof(Edit), new
-                {
-                    id
-                });
+                _logger.LogError(
+                    ex,
+                    "Error inesperado al subir imágenes para el producto {ProductId} por {User}.",
+                    id,
+                    GetCurrentUserName());
+
+                TempData["ErrorMessage"] = "Ocurrió un error inesperado al subir las imágenes.";
             }
+
+            return RedirectToAction(nameof(Edit), new { id });
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> RemoveImage(Guid imageId, Guid productId)
+        [Authorize(Policy = AppPermissions.ProductsEdit)]
+        public Task<IActionResult> RemoveImage(Guid imageId, Guid productId) =>
+            RemoveImageInternalAsync(imageId, productId);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Policy = AppPermissions.ProductsEdit)]
+        public Task<IActionResult> DeleteImage(Guid imageId, Guid productId) =>
+            RemoveImageInternalAsync(imageId, productId);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Policy = AppPermissions.ProductsLifecycle)]
+        public Task<IActionResult> Deactivate(Guid id) =>
+            DeactivateProductAsync(id);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Policy = AppPermissions.ProductsLifecycle)]
+        public Task<IActionResult> Delete(Guid id) =>
+            DeactivateProductAsync(id);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Policy = AppPermissions.ProductsLifecycle)]
+        public Task<IActionResult> Restore(Guid id) =>
+            ActivateProductAsync(id);
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Policy = AppPermissions.ProductsLifecycle)]
+        public Task<IActionResult> Activate(Guid id) =>
+            ActivateProductAsync(id);
+
+        private async Task<IActionResult> RemoveImageInternalAsync(Guid imageId, Guid productId)
         {
             try
             {
                 await _productApplicationService.RemoveImageAsync(imageId);
-                TempData["Success"] = "Imagen eliminada correctamente.";
-                return RedirectToAction(nameof(Edit), new
-                {
-                    id = productId
-                });
+                _logger.LogInformation(
+                    "Imagen {ImageId} eliminada del producto {ProductId} por {User}.",
+                    imageId,
+                    productId,
+                    GetCurrentUserName());
+
+                TempData["SuccessMessage"] = "Imagen eliminada correctamente.";
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(
+                    ex,
+                    "Imagen {ImageId} no encontrada al intentar eliminarla del producto {ProductId} por {User}.",
+                    imageId,
+                    productId,
+                    GetCurrentUserName());
+
+                TempData["ErrorMessage"] = ex.Message;
             }
             catch (Exception ex)
             {
-                TempData["Error"] = $"Error al eliminar imagen: {ex.Message}";
-                return RedirectToAction(nameof(Edit), new
-                {
-                    id = productId
-                });
+                _logger.LogError(
+                    ex,
+                    "Error inesperado al eliminar la imagen {ImageId} del producto {ProductId} por {User}.",
+                    imageId,
+                    productId,
+                    GetCurrentUserName());
+
+                TempData["ErrorMessage"] = "Ocurrió un error inesperado al eliminar la imagen.";
             }
+
+            return RedirectToAction(nameof(Edit), new { id = productId });
         }
+
+        private async Task<IActionResult> DeactivateProductAsync(Guid id)
+        {
+            try
+            {
+                var deactivated = await _productLifecycle.DeleteAsync(id);
+                if (!deactivated)
+                {
+                    _logger.LogWarning(
+                        "No se pudo desactivar el producto {ProductId} (no existe o ya está inactivo). Usuario: {User}.",
+                        id,
+                        GetCurrentUserName());
+                    TempData["ErrorMessage"] = "No se pudo desactivar el producto porque no existe o ya se encuentra inactivo.";
+                }
+                else
+                {
+                    _logger.LogInformation(
+                        "Producto {ProductId} desactivado por {User}.",
+                        id,
+                        GetCurrentUserName());
+                    TempData["SuccessMessage"] = "Producto desactivado correctamente.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error inesperado al desactivar el producto {ProductId} por {User}.",
+                    id,
+                    GetCurrentUserName());
+                TempData["ErrorMessage"] = "Ocurrió un error inesperado al desactivar el producto.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task<IActionResult> ActivateProductAsync(Guid id)
+        {
+            try
+            {
+                var restored = await _productLifecycle.RestoreAsync(id);
+                if (!restored)
+                {
+                    _logger.LogWarning(
+                        "No se pudo reactivar el producto {ProductId} (no existe o ya está activo). Usuario: {User}.",
+                        id,
+                        GetCurrentUserName());
+                    TempData["ErrorMessage"] = "No se pudo reactivar el producto porque no existe o ya se encuentra activo.";
+                }
+                else
+                {
+                    _logger.LogInformation(
+                        "Producto {ProductId} reactivado por {User}.",
+                        id,
+                        GetCurrentUserName());
+                    TempData["SuccessMessage"] = "Producto reactivado correctamente.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error inesperado al reactivar el producto {ProductId} por {User}.",
+                    id,
+                    GetCurrentUserName());
+                TempData["ErrorMessage"] = "Ocurrió un error inesperado al reactivar el producto.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        private async Task<IActionResult> BuildEditValidationViewAsync(
+            Guid targetId,
+            ProductInput product,
+            List<Guid>? selectedCategoryIds)
+        {
+            var existingProduct = await _productService.GetByIdWithDetailsAsync(targetId);
+            if (existingProduct == null)
+            {
+                return NotFound();
+            }
+
+            existingProduct.UpdateDetails(
+                product.Name ?? string.Empty,
+                product.Description ?? string.Empty,
+                product.Price,
+                product.Stock,
+                product.Featured);
+
+            if (product.IsActive)
+            {
+                existingProduct.Activate();
+            }
+            else
+            {
+                existingProduct.Deactivate();
+            }
+
+            await PopulateProductOptionsAsync(selectedCategoryIds, includeInactiveCategories: true);
+            return View(existingProduct);
+        }
+
+        private async Task PopulateProductOptionsAsync(
+            IEnumerable<Guid>? selectedCategoryIds = null,
+            bool includeInactiveCategories = false)
+        {
+            ViewBag.Categories = includeInactiveCategories
+                ? await _categoryService.GetAllAsync()
+                : await _categoryService.GetAllActiveAsync();
+            ViewBag.SelectedCategoryIds = selectedCategoryIds ?? Enumerable.Empty<Guid>();
+        }
+
+        private async Task<bool> CanManageLifecycleAsync() =>
+            (await _authorizationService.AuthorizeAsync(User, AppPermissions.ProductsLifecycle)).Succeeded;
+
+        private string GetCurrentUserName() => User.Identity?.Name ?? "Desconocido";
+
+        private static Product BuildProductPreview(ProductInput product) =>
+            new(
+                product.Name ?? string.Empty,
+                product.Description ?? string.Empty,
+                product.Price,
+                product.Stock,
+                product.Featured,
+                product.IsActive);
     }
 }
