@@ -2,10 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using TechStore.Data;
 using TechStore.Data.Repositories;
 using TechStore.Data.Storage;
+using TechStore.Extensions;
 using TechStore.Interfaces;
 using TechStore.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Logging nativo, auditoría MVC y manejo de excepciones.
+builder.AddAuditAndLogging();
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -16,15 +20,14 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
-
+builder.Services.AddIdentityConfiguration();
+builder.Services.AddAuthorizationPolicies();
 
 builder.Services.AddScoped<IProductsRepository, ProductsRepository>();
 builder.Services.AddScoped<ICategoryRespository, CategoryRepository>();
 
 builder.Services.AddScoped<IProductsService, ProductsService>();
 builder.Services.AddScoped<IProductApplicationService, ProductApplicationService>();
-
-
 
 builder.Services.AddScoped<IProductQueries>(provider =>
     (IProductQueries)provider.GetRequiredService<IProductsService>());
@@ -47,18 +50,19 @@ builder.Services.AddScoped<ICategoryLifecycle>(provider =>
 
 var app = builder.Build();
 
-
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     context.Database.Migrate();
-
 }
 
-// Configure the HTTP request pipeline.
+await app.SeedIdentityAsync();
+
+// Configure the HTTP request pipeline (activo en todos los entornos, incluido Development).
+app.UseGlobalExceptionHandling();
+
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
 }
 
@@ -67,6 +71,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(

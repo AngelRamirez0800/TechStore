@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Identity;
 using TechStore.Data;
+using TechStore.Data.Seeders;
 using TechStore.Interfaces;
+using TechStore.Services;
 
 namespace TechStore.Extensions
 {
@@ -51,6 +53,10 @@ namespace TechStore.Extensions
             {
                 options.ValidationInterval = TimeSpan.FromSeconds(15);
             });
+
+            services.AddScoped<IIdentitySeeder, IdentitySeeder>();
+            services.AddScoped<IRoleManagementService, RoleManagementService>();
+            services.AddScoped<IUserManagementService, UserManagementService>();
 
             return services;
         }
