@@ -25,11 +25,6 @@ namespace TechStore.Controllers
             return View(featuredProducts);
         }
 
-        public IActionResult Privacy()
-        {
-            return View();
-        }
-
         [ResponseCache(
             Duration = 0,
             Location = ResponseCacheLocation.None,

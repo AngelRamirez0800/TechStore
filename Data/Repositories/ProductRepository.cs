@@ -32,5 +32,14 @@ namespace TechStore.Data.Repositories
                 .Include(product => product.Images)
                 .ToListAsync();
         }
+
+        public override async Task<IList<Product>> GetAllActiveAsync()
+        {
+            return await _context.Products
+                .Where(product => product.IsActive)
+                .Include(product => product.Categories)
+                .Include(product => product.Images.OrderBy(image => image.ImageNumber))
+                .ToListAsync();
+        }
     }
 }

@@ -27,6 +27,14 @@ namespace TechStore.Data.Repositories
                 .ToListAsync();
         }
 
+        public override async Task<IList<Category>> GetAllActiveAsync()
+        {
+            return await _context.Categories
+                .Where(category => category.IsActive)
+                .Include(category => category.Products)
+                .ToListAsync();
+        }
+
         public Task<bool> HasProductsAsync(Guid id)
         {
             return _context.Categories

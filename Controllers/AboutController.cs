@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace TechStore.Controllers
 {
-    public class AcercaController : Controller
+    public class AboutController : Controller
     {
         public IActionResult Index()
         {
