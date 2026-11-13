@@ -1,64 +1,25 @@
-@inject IAuthorizationService AuthorizationService
-
 @if (User.Identity?.IsAuthenticated == true)
 {
-    var canManageRoles = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.RolesManage)).Succeeded;
-    var canManageUsers = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.UsersManage)).Succeeded;
-
-    <div class="d-flex flex-wrap align-items-center gap-2 ms-sm-auto mt-2 mt-sm-0">
+    <ul class="navbar-nav align-items-lg-center ms-auto">
         <vc:user-badge />
-
-        @if (canManageRoles || canManageUsers)
-        {
-            <div class="dropdown">
-                <button class="btn btn-sm btn-outline-dark rounded-pill dropdown-toggle px-3"
-                        type="button"
-                        id="adminMenuDropdown"
-                        data-bs-toggle="dropdown"
-                        aria-expanded="false">
-                    <i class="bi bi-shield-gear me-1"></i>Administración
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end techstore-dropdown shadow-sm border-0" aria-labelledby="adminMenuDropdown">
-                    @if (canManageRoles)
-                    {
-                        <li>
-                            <a class="dropdown-item" asp-controller="Roles" asp-action="Index">
-                                <i class="bi bi-key me-2 text-primary"></i>Roles y permisos
-                            </a>
-                        </li>
-                    }
-                    @if (canManageUsers)
-                    {
-                        <li>
-                            <a class="dropdown-item" asp-controller="Roles" asp-action="Users">
-                                <i class="bi bi-people me-2 text-primary"></i>Usuarios
-                            </a>
-                        </li>
-                    }
-                </ul>
-            </div>
-        }
-
-        <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
-            @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">
-                <i class="bi bi-box-arrow-right me-1"></i>Cerrar sesión
-            </button>
-        </form>
-    </div>
+    </ul>
 }
 else
 {
-    <div class="d-flex flex-wrap align-items-center gap-2 ms-sm-auto mt-2 mt-sm-0">
-        <a asp-controller="Account"
-           asp-action="Login"
-           class="btn btn-outline-primary btn-sm rounded-pill px-3">
-            <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar sesión
-        </a>
-        <a asp-controller="Account"
-           asp-action="Register"
-           class="btn btn-primary btn-sm rounded-pill px-3">
-            <i class="bi bi-person-plus me-1"></i>Crear cuenta
-        </a>
-    </div>
+    <ul class="navbar-nav align-items-lg-center gap-2 ms-auto">
+        <li class="nav-item">
+            <a class="btn btn-outline-primary btn-sm rounded-pill px-3"
+               asp-controller="Account"
+               asp-action="Login">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar sesión
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="btn btn-primary btn-sm rounded-pill px-3"
+               asp-controller="Account"
+               asp-action="Register">
+                <i class="bi bi-person-plus me-1"></i>Crear cuenta
+            </a>
+        </li>
+    </ul>
 }

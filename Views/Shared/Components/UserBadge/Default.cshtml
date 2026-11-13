@@ -1,31 +1,80 @@
 @model TechStore.ViewComponents.UserBadgeViewModel
+@inject IAuthorizationService AuthorizationService
 
-<div class="user-badge d-inline-flex align-items-center flex-wrap gap-2 px-3 py-1 rounded-pill bg-white border shadow-sm">
-    <i class="bi bi-person-circle text-primary fs-6"></i>
-    <span class="fw-semibold text-dark small">@Model.UserName</span>
+@{
+    var canManageRoles = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.RolesManage)).Succeeded;
+    var canManageUsers = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.UsersManage)).Succeeded;
+}
 
-    @foreach (var role in Model.Roles)
-    {
-        var isAdmin = string.Equals(role, AppRoles.Admin, StringComparison.OrdinalIgnoreCase);
-        var isClient = string.Equals(role, AppRoles.Client, StringComparison.OrdinalIgnoreCase);
+<li class="nav-item dropdown">
+    <button type="button"
+            class="btn user-sheet-trigger rounded-pill dropdown-toggle d-inline-flex align-items-center gap-2"
+            id="userMenuSheet"
+            data-bs-toggle="dropdown"
+            aria-expanded="false">
+        <i class="bi bi-person-circle text-primary fs-6"></i>
+        <span class="fw-semibold text-navy">@Model.UserName</span>
+    </button>
 
-        if (isAdmin)
+    <div class="dropdown-menu dropdown-menu-end user-sheet-menu border-0"
+         aria-labelledby="userMenuSheet">
+        <div class="user-sheet-header border-bottom mb-2">
+            <div class="d-flex align-items-center gap-2 mb-2">
+                <i class="bi bi-person-circle text-primary fs-4"></i>
+                <div class="min-w-0">
+                    <div class="fw-bold text-navy text-truncate">@Model.UserName</div>
+                    <div class="text-muted small">Sesión activa</div>
+                </div>
+            </div>
+
+            @if (Model.Roles.Any())
+            {
+                <div class="d-flex flex-wrap gap-1">
+                    @foreach (var role in Model.Roles)
+                    {
+                        var badgeClass = string.Equals(role, AppRoles.Admin, StringComparison.OrdinalIgnoreCase)
+                            ? "role-badge-admin"
+                            : string.Equals(role, AppRoles.Client, StringComparison.OrdinalIgnoreCase)
+                                ? "role-badge-client"
+                                : "role-badge-custom";
+                        <span class="badge rounded-pill role-badge @badgeClass">@role</span>
+                    }
+                </div>
+            }
+        </div>
+
+        @if (canManageRoles || canManageUsers)
         {
-            <span class="badge rounded-pill role-badge role-badge-admin">
-                <i class="bi bi-shield-lock-fill me-1"></i>@role
-            </span>
+            @if (canManageRoles)
+            {
+                <a class="dropdown-item d-flex align-items-center gap-2"
+                   asp-controller="Roles"
+                   asp-action="Index">
+                    <i class="bi bi-shield-lock text-primary"></i>
+                    <span>Roles y permisos</span>
+                </a>
+            }
+
+            @if (canManageUsers)
+            {
+                <a class="dropdown-item d-flex align-items-center gap-2"
+                   asp-controller="Roles"
+                   asp-action="Users">
+                    <i class="bi bi-people text-primary"></i>
+                    <span>Usuarios</span>
+                </a>
+            }
+
+            <hr class="dropdown-divider my-2" />
         }
-        else if (isClient)
-        {
-            <span class="badge rounded-pill role-badge role-badge-client">
-                <i class="bi bi-person-check-fill me-1"></i>@role
-            </span>
-        }
-        else
-        {
-            <span class="badge rounded-pill role-badge role-badge-custom">
-                <i class="bi bi-award-fill me-1"></i>@role
-            </span>
-        }
-    }
-</div>
+
+        <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+            @Html.AntiForgeryToken()
+            <button type="submit"
+                    class="dropdown-item text-danger d-flex align-items-center gap-2 fw-semibold">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Cerrar sesión</span>
+            </button>
+        </form>
+    </div>
+</li>

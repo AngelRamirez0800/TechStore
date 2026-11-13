@@ -9,17 +9,6 @@
     .auth-hero-denied {
         background: linear-gradient(135deg, #1b263b, #0077b6);
     }
-
-    .auth-btn-primary {
-        background: linear-gradient(135deg, #0077b6, #00b4d8);
-        border: none;
-        color: #fff;
-    }
-
-    .auth-btn-primary:hover {
-        background: linear-gradient(135deg, #00669d, #009fc2);
-        color: #fff;
-    }
 </style>
 
 <partial name="_AlertsPartial" />
@@ -76,7 +65,7 @@
                 <div class="d-flex flex-wrap gap-2 justify-content-center">
                     <a asp-controller="Home"
                        asp-action="Index"
-                       class="btn auth-btn-primary rounded-pill px-4 py-2 fw-semibold">
+                       class="btn btn-primary rounded-pill px-4 py-2 fw-semibold">
                         <i class="bi bi-house-door me-2"></i>
                         Volver al inicio
                     </a>

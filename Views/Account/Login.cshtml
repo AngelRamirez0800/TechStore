@@ -5,23 +5,6 @@
 }
 
 <style>
-    .auth-hero {
-        background: linear-gradient(135deg, #0077b6, #00b4d8);
-    }
-
-    .auth-btn-primary {
-        background: linear-gradient(135deg, #0077b6, #00b4d8);
-        border: none;
-        color: #fff;
-        transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-
-    .auth-btn-primary:hover {
-        background: linear-gradient(135deg, #00669d, #009fc2);
-        color: #fff;
-        transform: translateY(-1px);
-    }
-
     .validation-summary-valid {
         display: none;
     }
@@ -32,37 +15,17 @@
     }
 </style>
 
-<div class="auth-hero text-white rounded-4 shadow-sm p-4 mb-4">
-    <div class="d-flex align-items-center gap-3">
-        <img src="~/Images/Componentes/IMG_0714.png"
-             alt="Mascota TechStore"
-             width="54"
-             height="54"
-             class="rounded-circle bg-white p-1 shadow-sm flex-shrink-0" />
-        <div>
-            <h1 class="h2 fw-bold mb-1">Iniciar sesión</h1>
-            <p class="mb-0 opacity-75">Accede a tu cuenta de TechStore para explorar y gestionar el catálogo.</p>
-        </div>
-    </div>
-</div>
-
 <partial name="_AlertsPartial" />
 
 <div class="row justify-content-center my-4">
     <div class="col-12 col-md-8 col-lg-5">
         <div class="card border-0 rounded-4 shadow-lg overflow-hidden">
-            <div class="card-header border-0 py-3 px-4 text-white" style="background-color: #1b263b;">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-person-circle fs-5"></i>
-                    <span class="fw-semibold">Acceso a tu cuenta</span>
-                </div>
-            </div>
-
             <div class="card-body p-4 p-md-5 bg-white">
                 <div class="text-center mb-4">
-                    <img src="~/Images/Componentes/logo.png"
-                         alt="Logo TechStore"
-                         class="techstore-auth-logo img-fluid" />
+                    <img src="~/Images/Componentes/IMG_0714.png"
+                         alt="Mascota TechStore"
+                         class="techstore-auth-mascot shadow-sm" />
+                    <h1 class="h4 fw-bold text-navy mt-3 mb-1">Iniciar sesión</h1>
                 </div>
                 <form asp-controller="Account" asp-action="Login" method="post" novalidate>
                     <input type="hidden" asp-for="ReturnUrl" />
@@ -119,7 +82,7 @@
                     </div>
 
                     <div class="d-grid mb-3">
-                        <button type="submit" class="btn auth-btn-primary btn-lg rounded-pill fw-semibold shadow-sm">
+                        <button type="submit" class="btn btn-primary btn-lg rounded-pill fw-semibold shadow-sm">
                             <i class="bi bi-box-arrow-in-right me-2"></i>
                             Iniciar sesión
                         </button>

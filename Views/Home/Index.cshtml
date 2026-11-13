@@ -1,103 +1,39 @@
 @model List<TechStore.Models.Product>
-@inject IAuthorizationService AuthorizationService
 
 @{
     ViewData["Title"] = "Inicio";
-    var isAuthenticated = User.Identity?.IsAuthenticated == true;
-    var canReadProducts = isAuthenticated && (await AuthorizationService.AuthorizeAsync(User, AppPermissions.ProductsRead)).Succeeded;
-    var canReadCategories = isAuthenticated && (await AuthorizationService.AuthorizeAsync(User, AppPermissions.CategoriesRead)).Succeeded;
 
-    var heroModel = canReadProducts
-        ? new HeroBannerViewModel(
-            title: "Bienvenido a TechStore",
-            subtitle: "Tu tienda de confianza en tecnología: laptops, smartphones, audio y accesorios al mejor precio, con la calidad que buscas.",
-            eyebrow: null,
-            ctaText: "Ver productos",
-            ctaController: "Products",
-            ctaAction: "Index")
-        : new HeroBannerViewModel(
-            title: "Bienvenido a TechStore",
-            subtitle: "Tu tienda de confianza en tecnología: laptops, smartphones, audio y accesorios al mejor precio, con la calidad que buscas.",
-            eyebrow: null,
-            ctaText: isAuthenticated ? "Contáctenos" : "Iniciar sesión",
-            ctaController: isAuthenticated ? "Contacto" : "Account",
-            ctaAction: isAuthenticated ? "Index" : "Login");
+    var heroModel = new HeroBannerViewModel(
+        title: "Bienvenido a TechStore",
+        subtitle: "Tu tienda de confianza en tecnología: laptops, smartphones, audio y accesorios al mejor precio, con la calidad que buscas.",
+        eyebrow: null,
+        ctaText: null,
+        ctaController: null,
+        ctaAction: null);
 }
 
 <partial name="_HeroBanner" model="heroModel" />
 
-@if (!isAuthenticated)
-{
-    <div class="card border-0 shadow-sm guest-cta-card mb-4">
-        <div class="card-body p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-            <div>
-                <h2 class="h5 fw-bold text-navy mb-1">
-                    <i class="bi bi-compass text-primary me-2"></i>Inicia sesión para explorar el catálogo completo
-                </h2>
-                <p class="text-muted mb-0 small">
-                    Accede al inventario actualizado por categorías, disponibilidad en tiempo real y fichas detalladas de cada equipo.
-                </p>
-            </div>
-            <div class="d-flex flex-wrap gap-2 flex-shrink-0">
-                <a asp-controller="Account" asp-action="Login" class="btn btn-primary rounded-pill px-4">
-                    <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar sesión
-                </a>
-                <a asp-controller="Account" asp-action="Register" class="btn btn-outline-primary rounded-pill px-4">
-                    <i class="bi bi-person-plus me-1"></i>Crear cuenta
-                </a>
-            </div>
-        </div>
-    </div>
-}
-
 <hr />
 
 <div class="iconos-inicio row text-center mb-5 g-3 justify-content-center">
-    @if (canReadProducts)
-    {
-        <div class="col-6 col-md-3">
-            <a asp-controller="Products"
-               asp-action="Index"
-               class="card quick-link-card h-100 border-0 shadow-sm p-3 text-decoration-none text-dark">
-                <i class="bi bi-box-seam display-6 text-primary"></i>
-                <p class="mt-2 mb-0 fw-bolder">Productos</p>
-            </a>
-        </div>
-    }
-    else if (!isAuthenticated)
-    {
-        <div class="col-6 col-md-3">
-            <a asp-controller="Account"
-               asp-action="Login"
-               class="card quick-link-card h-100 border-0 shadow-sm p-3 text-decoration-none text-dark">
-                <i class="bi bi-box-arrow-in-right display-6 text-primary"></i>
-                <p class="mt-2 mb-0 fw-bolder">Iniciar sesión</p>
-            </a>
-        </div>
-    }
+    <div class="col-6 col-md-3">
+        <a asp-controller="Products"
+           asp-action="Index"
+           class="card quick-link-card h-100 border-0 shadow-sm p-3 text-decoration-none text-dark">
+            <i class="bi bi-box-seam display-6 text-primary"></i>
+            <p class="mt-2 mb-0 fw-bolder">Productos</p>
+        </a>
+    </div>
 
-    @if (canReadCategories)
-    {
-        <div class="col-6 col-md-3">
-            <a asp-controller="Category"
-               asp-action="Index"
-               class="card quick-link-card h-100 border-0 shadow-sm p-3 text-decoration-none text-dark">
-                <i class="bi bi-grid display-6 text-primary"></i>
-                <p class="mt-2 mb-0 fw-bolder">Categorías</p>
-            </a>
-        </div>
-    }
-    else if (!isAuthenticated)
-    {
-        <div class="col-6 col-md-3">
-            <a asp-controller="Account"
-               asp-action="Register"
-               class="card quick-link-card h-100 border-0 shadow-sm p-3 text-decoration-none text-dark">
-                <i class="bi bi-person-plus display-6 text-primary"></i>
-                <p class="mt-2 mb-0 fw-bolder">Crear cuenta</p>
-            </a>
-        </div>
-    }
+    <div class="col-6 col-md-3">
+        <a asp-controller="Category"
+           asp-action="Index"
+           class="card quick-link-card h-100 border-0 shadow-sm p-3 text-decoration-none text-dark">
+            <i class="bi bi-grid display-6 text-primary"></i>
+            <p class="mt-2 mb-0 fw-bolder">Categorías</p>
+        </a>
+    </div>
 
     <div class="col-6 col-md-3">
         <a asp-controller="Contacto"
@@ -123,22 +59,11 @@
 <div class="productos-texto-inicio mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
     <h2 class="text-navy fw-bold mb-0">Productos Destacados</h2>
 
-    @if (canReadProducts)
-    {
-        <a asp-controller="Products"
-           asp-action="Index"
-           class="btn btn-outline-primary btn-sm rounded-pill px-3">
-            Ver todos <i class="bi bi-arrow-right ms-1"></i>
-        </a>
-    }
-    else if (!isAuthenticated)
-    {
-        <a asp-controller="Account"
-           asp-action="Login"
-           class="btn btn-outline-primary btn-sm rounded-pill px-3">
-            Inicia sesión para ver el catálogo <i class="bi bi-lock ms-1"></i>
-        </a>
-    }
+    <a asp-controller="Products"
+       asp-action="Index"
+       class="btn btn-primary btn-sm rounded-pill px-4">
+        Ver todos <i class="bi bi-arrow-right ms-1"></i>
+    </a>
 </div>
 
 @if (Model != null && Model.Any())
@@ -168,9 +93,9 @@
             {
                 var product = featuredList[i];
                 var primaryImage = product.Images?.OrderBy(img => img.ImageNumber).FirstOrDefault();
-                var imagePath = primaryImage != null
-                    ? Url.Content("~/" + primaryImage.ImagePath.TrimStart('/'))
-                    : Url.Content("~/Images/Componentes/logo.png");
+                var imagePath = primaryImage != null && !string.IsNullOrWhiteSpace(primaryImage.ImagePath)
+                    ? Url.Content("~/" + primaryImage.ImagePath.Replace("\\", "/").TrimStart('/'))
+                    : null;
                 var primaryCategory = product.Categories?
                     .Where(c => c.IsActive)
                     .OrderBy(c => c.Name)
@@ -178,9 +103,10 @@
 
                 <div class="carousel-item @(i == 0 ? "active" : string.Empty)">
                     <a asp-controller="Products"
-                       asp-action="Index"
+                       asp-action="Details"
+                       asp-route-id="@product.Id"
                        class="featured-banner-link d-block text-decoration-none text-white"
-                       aria-label="Explorar @product.Name en Productos">
+                       aria-label="Ver detalle de @product.Name">
                         <div class="featured-banner-slide p-4 p-md-5 d-flex align-items-center">
                             <div class="row w-100 align-items-center g-4 mx-0">
                                 <div class="col-12 col-md-7 text-start">
@@ -208,17 +134,24 @@
 
                                     <div class="d-flex flex-wrap align-items-center gap-3">
                                         <span class="fs-4 fw-bold text-white">$@product.Price.ToString("N2")</span>
-                                        <span class="btn btn-light btn-sm rounded-pill px-3 fw-semibold text-primary shadow-sm">
-                                            Ver en Productos <i class="bi bi-arrow-right ms-1"></i>
-                                        </span>
                                     </div>
                                 </div>
 
                                 <div class="col-12 col-md-5">
                                     <div class="featured-banner-img-wrap shadow-sm">
-                                        <img src="@imagePath"
-                                             alt="@product.Name"
-                                             class="featured-banner-img" />
+                                        @if (!string.IsNullOrEmpty(imagePath))
+                                        {
+                                            <img src="@imagePath"
+                                                 alt="@product.Name"
+                                                 class="featured-banner-img" />
+                                        }
+                                        else
+                                        {
+                                            <div class="featured-banner-placeholder">
+                                                <i class="bi bi-image fs-1"></i>
+                                                <span class="small fw-semibold">Sin imagen</span>
+                                            </div>
+                                        }
                                     </div>
                                 </div>
                             </div>

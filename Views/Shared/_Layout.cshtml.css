@@ -11,23 +11,6 @@ a {
   color: #0077b6;
 }
 
-.btn-primary {
-  color: #fff;
-  background-color: #0077b6;
-  border-color: #00669d;
-}
-
-.btn-primary:hover {
-  background-color: #005f92;
-  border-color: #005582;
-}
-
-.nav-pills .nav-link.active, .nav-pills .show > .nav-link {
-  color: #fff;
-  background-color: #0077b6;
-  border-color: #00669d;
-}
-
 .border-top {
   border-top: 1px solid #e5e5e5;
 }

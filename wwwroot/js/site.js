@@ -55,3 +55,45 @@ $(function () {
     });
 
 });
+
+
+(function () {
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll("[data-ts-multiselect-form]").forEach(function (form) {
+            const checkboxes = form.querySelectorAll(".ts-multiselect-checkbox");
+            const countBadge = form.querySelector("[data-ts-multiselect-count]");
+            const clearButton = form.querySelector("[data-ts-multiselect-clear]");
+
+            function updateCount() {
+                if (!countBadge) {
+                    return;
+                }
+
+                let checked = 0;
+                checkboxes.forEach(function (box) {
+                    if (box.checked) {
+                        checked += 1;
+                    }
+                });
+
+                countBadge.textContent = String(checked);
+                countBadge.classList.toggle("d-none", checked === 0);
+            }
+
+            checkboxes.forEach(function (box) {
+                box.addEventListener("change", updateCount);
+            });
+
+            if (clearButton) {
+                clearButton.addEventListener("click", function () {
+                    checkboxes.forEach(function (box) {
+                        box.checked = false;
+                    });
+                    updateCount();
+                });
+            }
+
+            updateCount();
+        });
+    });
+})();

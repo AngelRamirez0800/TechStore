@@ -1,49 +1,74 @@
 @model List<TechStore.Models.Product>
 @inject IAuthorizationService AuthorizationService
-@inject TechStore.Interfaces.ICategoryQueries CategoryQueries
 
 @{
     ViewData["Title"] = "Productos";
 
     var canCreate = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.ProductsCreate)).Succeeded;
-    var canLifecycle = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.ProductsLifecycle)).Succeeded;
+    var canLifecycle = ViewBag.CanManageLifecycle is bool canManageLifecycle
+        ? canManageLifecycle
+        : (await AuthorizationService.AuthorizeAsync(User, AppPermissions.ProductsLifecycle)).Succeeded;
 
-    Guid? selectedCategoryId = Guid.TryParse(Context.Request.Query["categoryId"], out var parsedCategoryId)
-        ? parsedCategoryId
-        : ViewBag.SelectedCategoryId as Guid?;
-
-    var activeCategories = (await CategoryQueries.GetAllActiveAsync())
-        .OrderBy(c => c.Name)
+    var selectedCategoryIds = ViewBag.SelectedCategoryIds as IReadOnlySet<Guid> ?? new HashSet<Guid>();
+    var selectedStatuses = ViewBag.SelectedStatuses as IReadOnlySet<string>
+        ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    var filterCategories = (ViewBag.Categories as IEnumerable<TechStore.Models.Category>
+        ?? Enumerable.Empty<TechStore.Models.Category>())
         .ToList();
 
-    var selectedCategory = selectedCategoryId.HasValue
-        ? activeCategories.FirstOrDefault(c => c.Id == selectedCategoryId.Value)
-        : null;
-
-    var visibleProducts = (Model ?? new List<TechStore.Models.Product>())
-        .Where(p => canLifecycle || p.IsActive)
-        .Where(p => !selectedCategoryId.HasValue || p.Categories.Any(c => c.Id == selectedCategoryId.Value))
+    var selectedCategories = filterCategories
+        .Where(c => selectedCategoryIds.Contains(c.Id))
         .ToList();
+
+    var visibleProducts = Model ?? new List<TechStore.Models.Product>();
+    var hasActiveFilters = selectedCategoryIds.Count > 0 || (canLifecycle && selectedStatuses.Count > 0);
+
+    var filterBarModel = new CatalogFilterBarViewModel
+    {
+        ControllerName = "Products",
+        ActionName = "Index",
+        ButtonLabel = "Filtros",
+        PrimaryGroupTitle = "Categorías",
+        PrimaryParamName = "categoryIds",
+        PrimaryEmptyMessage = "No hay categorías disponibles.",
+        PrimaryOptions = filterCategories
+            .Select(category => new CatalogFilterOption(
+                category.Id,
+                category.Name,
+                selectedCategoryIds.Contains(category.Id),
+                category.IsActive))
+            .ToList(),
+        ShowStatusFilter = canLifecycle,
+        ActiveStatusLabel = "Activos",
+        InactiveStatusLabel = "Inactivos",
+        SelectedStatuses = selectedStatuses,
+        ResultCount = visibleProducts.Count,
+        ResultLabel = visibleProducts.Count == 1 ? "producto" : "productos"
+    };
 
     var heroSubtitle = canCreate || canLifecycle
         ? "Administración del catálogo, existencias y precios de TechStore."
         : "Explora los dispositivos y accesorios tecnológicos disponibles en TechStore.";
 
     var heroModel = new HeroBannerViewModel(
-        title: selectedCategory != null ? $"Productos · {selectedCategory.Name}" : "Productos",
+        title: selectedCategories.Count == 1 ? $"Productos · {selectedCategories[0].Name}" : "Productos",
         subtitle: heroSubtitle,
-        eyebrow: "Catálogo TechStore");
+        eyebrow: null);
 }
 
 <partial name="_HeroBanner" model="heroModel" />
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
     <div>
         <p class="text-muted mb-0">
             Mostrando <strong>@visibleProducts.Count</strong> @(visibleProducts.Count == 1 ? "producto" : "productos")
-            @if (selectedCategory != null)
+            @if (selectedCategories.Count == 1)
             {
-                <span>en la categoría <strong class="text-navy">@selectedCategory.Name</strong></span>
+                <span>en la categoría <strong class="text-navy">@selectedCategories[0].Name</strong></span>
+            }
+            else if (selectedCategories.Count > 1)
+            {
+                <span>en <strong class="text-navy">@selectedCategories.Count</strong> categorías seleccionadas</span>
             }
         </p>
     </div>
@@ -52,47 +77,31 @@
     {
         <a asp-controller="Products"
            asp-action="Create"
-           class="btn btn-primary rounded-pill px-4">
+           class="btn btn-primary rounded-pill px-4 align-self-start align-self-md-center">
             <i class="bi bi-plus-circle me-1"></i>
             Nuevo producto
         </a>
     }
 </div>
 
-@if (activeCategories.Any())
-{
-    <div class="category-filter-pills d-flex flex-wrap align-items-center gap-2 mb-4" aria-label="Filtrar por categoría">
-        <span class="small text-muted fw-semibold me-1">
-            <i class="bi bi-funnel me-1"></i>Filtrar:
-        </span>
-
-        <a asp-controller="Products"
-           asp-action="Index"
-           class="btn btn-sm rounded-pill category-pill @(!selectedCategoryId.HasValue ? "active" : "btn-outline-secondary")">
-            Todas
-        </a>
-
-        @foreach (var category in activeCategories)
-        {
-            var isSelected = selectedCategoryId == category.Id;
-            <a href="@Url.Action("Index", "Products", new { categoryId = category.Id })"
-               class="btn btn-sm rounded-pill category-pill @(isSelected ? "active" : "btn-outline-primary")">
-                @category.Name
-            </a>
-        }
-    </div>
-}
+<div class="mb-4">
+    <partial name="_CatalogFilterBar" model="filterBarModel" />
+</div>
 
 @if (!visibleProducts.Any())
 {
+    var emptyMessage = selectedCategories.Count == 1 && selectedStatuses.Count == 0
+        ? $"No hay productos registrados en la categoría \"{selectedCategories[0].Name}\"."
+        : hasActiveFilters
+            ? "No hay productos que coincidan con los filtros seleccionados."
+            : "No hay productos registrados.";
+
     <div class="alert alert-info shadow-sm d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div>
             <i class="bi bi-info-circle me-2"></i>
-            @(selectedCategory != null
-                ? $"No hay productos registrados en la categoría \"{selectedCategory.Name}\"."
-                : "No hay productos registrados.")
+            @emptyMessage
         </div>
-        @if (selectedCategory != null)
+        @if (hasActiveFilters)
         {
             <a asp-controller="Products" asp-action="Index" class="btn btn-sm btn-outline-primary rounded-pill">
                 Ver todos los productos

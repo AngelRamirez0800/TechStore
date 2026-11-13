@@ -5,35 +5,80 @@
     ViewData["Title"] = "Listado de Categorías";
 
     var canCreate = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.CategoriesCreate)).Succeeded;
-    var canLifecycle = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.CategoriesLifecycle)).Succeeded;
+    var canLifecycle = ViewBag.CanManageLifecycle is bool canManageLifecycle
+        ? canManageLifecycle
+        : (await AuthorizationService.AuthorizeAsync(User, AppPermissions.CategoriesLifecycle)).Succeeded;
+
+    var selectedProductIds = ViewBag.SelectedProductIds as IReadOnlySet<Guid> ?? new HashSet<Guid>();
+    var selectedStatuses = ViewBag.SelectedStatuses as IReadOnlySet<string>
+        ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+    var filterProducts = (ViewBag.FilterProducts as IEnumerable<TechStore.Models.Product>
+        ?? Enumerable.Empty<TechStore.Models.Product>())
+        .ToList();
 
     var visibleCategories = (Model ?? Enumerable.Empty<TechStore.Models.Category>())
-        .Where(c => canLifecycle || c.IsActive)
         .OrderBy(c => c.Name)
         .ToList();
+
+    var hasActiveFilters = selectedProductIds.Count > 0 || (canLifecycle && selectedStatuses.Count > 0);
+
+    var filterBarModel = new CatalogFilterBarViewModel
+    {
+        ControllerName = "Category",
+        ActionName = "Index",
+        ButtonLabel = "Filtros",
+        PrimaryGroupTitle = "Productos",
+        PrimaryParamName = "productIds",
+        PrimaryEmptyMessage = "No hay productos disponibles.",
+        PrimaryOptions = filterProducts
+            .Select(product => new CatalogFilterOption(
+                product.Id,
+                product.Name,
+                selectedProductIds.Contains(product.Id),
+                product.IsActive))
+            .ToList(),
+        ShowStatusFilter = canLifecycle,
+        ActiveStatusLabel = "Activas",
+        InactiveStatusLabel = "Inactivas",
+        SelectedStatuses = selectedStatuses,
+        ResultCount = visibleCategories.Count,
+        ResultLabel = visibleCategories.Count == 1 ? "categoría" : "categorías"
+    };
 
     var heroModel = new HeroBannerViewModel(
         title: "Categorías",
         subtitle: "Explora y organiza los productos tecnológicos de TechStore por línea de especialidad.",
-        eyebrow: "Organización del Catálogo");
+        eyebrow: null);
 }
 
 <partial name="_HeroBanner" model="heroModel" />
 
-@if (canCreate)
-{
-    <div class="d-flex justify-content-end mb-4">
-        <a class="btn btn-primary rounded-pill px-4" asp-action="Create">
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <partial name="_CatalogFilterBar" model="filterBarModel" />
+
+    @if (canCreate)
+    {
+        <a class="btn btn-primary rounded-pill px-4 align-self-start align-self-md-center" asp-action="Create">
             <i class="bi bi-plus-circle me-1"></i>Agregar categoría
         </a>
-    </div>
-}
+    }
+</div>
 
 @if (!visibleCategories.Any())
 {
-    <div class="alert alert-info shadow-sm">
-        <i class="bi bi-info-circle me-2"></i>
-        No hay categorías registradas en este momento.
+    <div class="alert alert-info shadow-sm d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+            <i class="bi bi-info-circle me-2"></i>
+            @(hasActiveFilters
+                ? "No hay categorías que coincidan con los filtros seleccionados."
+                : "No hay categorías registradas en este momento.")
+        </div>
+        @if (hasActiveFilters)
+        {
+            <a asp-controller="Category" asp-action="Index" class="btn btn-sm btn-outline-primary rounded-pill">
+                Ver todas las categorías
+            </a>
+        }
     </div>
 }
 else

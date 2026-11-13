@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TechStore.Constants;
 using TechStore.DTOs;
+using TechStore.Helpers;
 using TechStore.Interfaces;
 using TechStore.Models;
 
@@ -34,34 +35,55 @@ namespace TechStore.Controllers
         }
 
         [Authorize(Policy = AppPermissions.ProductsRead)]
-        public async Task<IActionResult> Index(Guid? categoryId = null)
+        public async Task<IActionResult> Index(
+            List<Guid>? categoryIds = null,
+            Guid? categoryId = null,
+            List<string>? statuses = null)
         {
             var canManageLifecycle = await CanManageLifecycleAsync();
+            var canViewInactiveCategories = await CanManageCategoriesLifecycleAsync();
+            var selectedCategoryIds = CatalogFilterHelper.NormalizeGuids(categoryIds, categoryId);
+            var selectedStatuses = CatalogFilterHelper.NormalizeStatuses(statuses, canManageLifecycle);
+
             var products = canManageLifecycle
                 ? await _productService.GetAllAsync()
                 : await _productService.GetAllActiveAsync();
 
-            if (categoryId.HasValue && categoryId.Value != Guid.Empty)
-            {
-                products = products
-                    .Where(product => product.Categories.Any(category =>
-                        category.Id == categoryId.Value &&
-                        (canManageLifecycle || category.IsActive)))
-                    .ToList();
-            }
-
-            ViewBag.SelectedCategoryId = categoryId;
-            ViewBag.Categories = (await _categoryService.GetAllActiveAsync())
+            var filterCategories = (canViewInactiveCategories
+                ? await _categoryService.GetAllAsync()
+                : await _categoryService.GetAllActiveAsync())
                 .OrderBy(category => category.Name)
                 .ToList();
 
-            var productList = products as List<Product> ?? products.ToList();
+            var filteredProducts = products.AsEnumerable();
+
+            if (selectedCategoryIds.Count > 0)
+            {
+                filteredProducts = filteredProducts.Where(product =>
+                    product.Categories.Any(category =>
+                        selectedCategoryIds.Contains(category.Id) &&
+                        (canViewInactiveCategories || category.IsActive)));
+            }
+
+            filteredProducts = CatalogFilterHelper.FilterByStatus(
+                filteredProducts,
+                selectedStatuses,
+                product => product.IsActive);
+
+            var productList = filteredProducts.ToList();
+
+            ViewBag.SelectedCategoryId = categoryId;
+            ViewBag.SelectedCategoryIds = selectedCategoryIds;
+            ViewBag.SelectedStatuses = selectedStatuses;
+            ViewBag.CanManageLifecycle = canManageLifecycle;
+            ViewBag.Categories = filterCategories;
 
             _logger.LogInformation(
-                "Usuario {User} consultó productos (Total: {Count}, CategoryId: {CategoryId}).",
+                "Usuario {User} consultó productos (Total: {Count}, CategoryIds: {CategoryIds}, Statuses: {Statuses}).",
                 GetCurrentUserName(),
                 productList.Count,
-                categoryId);
+                string.Join(",", selectedCategoryIds),
+                string.Join(",", selectedStatuses));
 
             return View(productList);
         }
@@ -497,6 +519,9 @@ namespace TechStore.Controllers
 
         private async Task<bool> CanManageLifecycleAsync() =>
             (await _authorizationService.AuthorizeAsync(User, AppPermissions.ProductsLifecycle)).Succeeded;
+
+        private async Task<bool> CanManageCategoriesLifecycleAsync() =>
+            (await _authorizationService.AuthorizeAsync(User, AppPermissions.CategoriesLifecycle)).Succeeded;
 
         private string GetCurrentUserName() => User.Identity?.Name ?? "Desconocido";
 
