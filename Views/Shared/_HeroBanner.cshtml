@@ -4,21 +4,26 @@
 {
     <section class="techstore-hero rounded-4 text-white p-4 p-md-5 mb-4 shadow-sm">
         <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
-            <div>
-                @if (!string.IsNullOrWhiteSpace(Model.Eyebrow))
-                {
-                    <span class="techstore-eyebrow d-inline-flex align-items-center gap-1 mb-2">
-                        <i class="bi bi-cpu"></i>
-                        @Model.Eyebrow
-                    </span>
-                }
+            <div class="d-flex align-items-start align-items-sm-center gap-3">
+                <img src="~/Images/Componentes/IMG_0714.png"
+                     alt="Mascota TechStore"
+                     class="techstore-hero-mascot shadow-sm d-none d-sm-block" />
 
-                <h1 class="fw-bold mb-2">@Model.Title</h1>
+                <div>
+                    @if (!string.IsNullOrWhiteSpace(Model.Eyebrow))
+                    {
+                        <span class="techstore-eyebrow d-inline-flex align-items-center gap-1 mb-2">
+                            @Model.Eyebrow
+                        </span>
+                    }
 
-                @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
-                {
-                    <p class="mb-0 text-white-75 fs-6 col-lg-10">@Model.Subtitle</p>
-                }
+                    <h1 class="fw-bold mb-2">@Model.Title</h1>
+
+                    @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
+                    {
+                        <p class="mb-0 text-white-75 fs-6 col-lg-10">@Model.Subtitle</p>
+                    }
+                </div>
             </div>
 
             @if (!string.IsNullOrWhiteSpace(Model.CtaText) && !string.IsNullOrWhiteSpace(Model.CtaController))

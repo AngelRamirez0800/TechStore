@@ -111,6 +111,39 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.28);
 }
 
+.techstore-nav-mascot {
+    width: 36px;
+    height: 36px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid rgba(0, 119, 182, 0.25);
+    background-color: #ffffff;
+}
+
+.techstore-footer-mascot {
+    width: 24px;
+    height: 24px;
+    object-fit: cover;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+
+.techstore-hero-mascot {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.45);
+    background-color: #ffffff;
+    flex-shrink: 0;
+}
+
+.techstore-auth-logo {
+    max-height: 88px;
+    width: auto;
+    object-fit: contain;
+}
+
 /* Legacy hero helpers preserved */
 .contacto-titulo,
 .contenedor-inicio,
