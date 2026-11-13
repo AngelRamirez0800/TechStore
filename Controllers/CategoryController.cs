@@ -34,53 +34,28 @@ namespace TechStore.Controllers
         }
 
         [Authorize(Policy = AppPermissions.CategoriesRead)]
-        public async Task<IActionResult> Index(
-            List<Guid>? productIds = null,
-            List<string>? statuses = null)
+        public async Task<IActionResult> Index(List<string>? statuses = null)
         {
             var canManageLifecycle = await CanManageCategoriesLifecycleAsync();
-            var canViewInactiveProducts = await CanManageProductsLifecycleAsync();
-            var selectedProductIds = CatalogFilterHelper.NormalizeGuids(productIds);
             var selectedStatuses = CatalogFilterHelper.NormalizeStatuses(statuses, canManageLifecycle);
 
             var categories = canManageLifecycle
                 ? await _categoryQueries.GetAllAsync()
                 : await _categoryQueries.GetAllActiveAsync();
 
-            var filterProducts = (canViewInactiveProducts
-                ? await _productQueries.GetAllAsync()
-                : await _productQueries.GetAllActiveAsync())
-                .OrderBy(product => product.Name)
+            var categoryList = CatalogFilterHelper.FilterByStatus(
+                categories,
+                selectedStatuses,
+                category => category.IsActive)
                 .ToList();
 
-            var filteredCategories = categories.AsEnumerable();
-
-            if (selectedProductIds.Count > 0)
-            {
-                filteredCategories = filteredCategories.Where(category =>
-                    category.Products.Any(product =>
-                        selectedProductIds.Contains(product.Id) &&
-                        (canViewInactiveProducts || product.IsActive)));
-            }
-
-            filteredCategories = CatalogFilterHelper.FilterByStatus(
-                filteredCategories,
-                selectedStatuses,
-                category => category.IsActive);
-
-            var categoryList = filteredCategories.ToList();
-
             ViewBag.CanManageLifecycle = canManageLifecycle;
-            ViewBag.CanViewInactiveProducts = canViewInactiveProducts;
-            ViewBag.FilterProducts = filterProducts;
-            ViewBag.SelectedProductIds = selectedProductIds;
             ViewBag.SelectedStatuses = selectedStatuses;
 
             _logger.LogInformation(
-                "Usuario {User} consultó categorías (Total: {Count}, ProductIds: {ProductIds}, Statuses: {Statuses}).",
+                "Usuario {User} consultó categorías (Total: {Count}, Statuses: {Statuses}).",
                 GetCurrentUserName(),
                 categoryList.Count,
-                string.Join(",", selectedProductIds),
                 string.Join(",", selectedStatuses));
 
             return View(categoryList);

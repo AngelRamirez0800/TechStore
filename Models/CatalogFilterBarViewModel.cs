@@ -17,6 +17,7 @@ namespace TechStore.Models
         public string ControllerName { get; init; } = string.Empty;
         public string ActionName { get; init; } = "Index";
         public string ButtonLabel { get; init; } = "Filtros";
+        public bool ShowPrimaryFilter { get; init; } = true;
         public string PrimaryGroupTitle { get; init; } = string.Empty;
         public string PrimaryParamName { get; init; } = string.Empty;
         public string PrimaryEmptyMessage { get; init; } = "No hay opciones disponibles.";

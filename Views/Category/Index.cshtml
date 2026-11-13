@@ -9,34 +9,21 @@
         ? canManageLifecycle
         : (await AuthorizationService.AuthorizeAsync(User, AppPermissions.CategoriesLifecycle)).Succeeded;
 
-    var selectedProductIds = ViewBag.SelectedProductIds as IReadOnlySet<Guid> ?? new HashSet<Guid>();
     var selectedStatuses = ViewBag.SelectedStatuses as IReadOnlySet<string>
         ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-    var filterProducts = (ViewBag.FilterProducts as IEnumerable<TechStore.Models.Product>
-        ?? Enumerable.Empty<TechStore.Models.Product>())
-        .ToList();
 
     var visibleCategories = (Model ?? Enumerable.Empty<TechStore.Models.Category>())
         .OrderBy(c => c.Name)
         .ToList();
 
-    var hasActiveFilters = selectedProductIds.Count > 0 || (canLifecycle && selectedStatuses.Count > 0);
+    var hasActiveFilters = canLifecycle && selectedStatuses.Count > 0;
 
     var filterBarModel = new CatalogFilterBarViewModel
     {
         ControllerName = "Category",
         ActionName = "Index",
         ButtonLabel = "Filtros",
-        PrimaryGroupTitle = "Productos",
-        PrimaryParamName = "productIds",
-        PrimaryEmptyMessage = "No hay productos disponibles.",
-        PrimaryOptions = filterProducts
-            .Select(product => new CatalogFilterOption(
-                product.Id,
-                product.Name,
-                selectedProductIds.Contains(product.Id),
-                product.IsActive))
-            .ToList(),
+        ShowPrimaryFilter = false,
         ShowStatusFilter = canLifecycle,
         ActiveStatusLabel = "Activas",
         InactiveStatusLabel = "Inactivas",
@@ -53,16 +40,19 @@
 
 <partial name="_HeroBanner" model="heroModel" />
 
-<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
-    <partial name="_CatalogFilterBar" model="filterBarModel" />
+@if (canLifecycle || canCreate)
+{
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <partial name="_CatalogFilterBar" model="filterBarModel" />
 
-    @if (canCreate)
-    {
-        <a class="btn btn-primary rounded-pill px-4 align-self-start align-self-md-center" asp-action="Create">
-            <i class="bi bi-plus-circle me-1"></i>Agregar categoría
-        </a>
-    }
-</div>
+        @if (canCreate)
+        {
+            <a class="btn btn-primary rounded-pill px-4 align-self-start align-self-md-center" asp-action="Create">
+                <i class="bi bi-plus-circle me-1"></i>Agregar categoría
+            </a>
+        }
+    </div>
+}
 
 @if (!visibleCategories.Any())
 {

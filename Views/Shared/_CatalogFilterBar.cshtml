@@ -1,110 +1,121 @@
 @model TechStore.Models.CatalogFilterBarViewModel
 
 @{
-    var selectedPrimaryCount = Model.PrimaryOptions.Count(option => option.IsSelected);
+    var selectedPrimaryCount = Model.ShowPrimaryFilter
+        ? Model.PrimaryOptions.Count(option => option.IsSelected)
+        : 0;
     var selectedStatusCount = Model.ShowStatusFilter ? Model.SelectedStatuses.Count : 0;
     var totalSelectedCount = selectedPrimaryCount + selectedStatusCount;
     var hasActiveFilters = totalSelectedCount > 0;
 }
 
-<form asp-controller="@Model.ControllerName"
-      asp-action="@Model.ActionName"
-      method="get"
-      class="d-flex flex-wrap align-items-center gap-2"
-      data-ts-multiselect-form>
-    <div class="dropdown ts-multiselect">
-        <button type="button"
-                class="btn @(hasActiveFilters ? "btn-primary" : "btn-outline-primary") btn-sm dropdown-toggle d-inline-flex align-items-center gap-2 px-3 shadow-sm"
-                data-bs-toggle="dropdown"
-                data-bs-auto-close="outside"
-                aria-expanded="false"
-                data-ts-multiselect-toggle>
-            <i class="bi bi-funnel"></i>
-            <span data-ts-multiselect-label>@Model.ButtonLabel</span>
-            <span class="badge rounded-pill ts-multiselect-count @(totalSelectedCount == 0 ? "d-none" : string.Empty)"
-                  data-ts-multiselect-count>
-                @totalSelectedCount
-            </span>
-        </button>
+@if (Model.ShowPrimaryFilter || Model.ShowStatusFilter)
+{
+    <form asp-controller="@Model.ControllerName"
+          asp-action="@Model.ActionName"
+          method="get"
+          class="d-flex flex-wrap align-items-center gap-2"
+          data-ts-multiselect-form>
+        <div class="dropdown ts-multiselect">
+            <button type="button"
+                    class="btn @(hasActiveFilters ? "btn-primary" : "btn-outline-primary") btn-sm dropdown-toggle d-inline-flex align-items-center gap-2 px-3 shadow-sm"
+                    data-bs-toggle="dropdown"
+                    data-bs-auto-close="outside"
+                    aria-expanded="false"
+                    data-ts-multiselect-toggle>
+                <i class="bi bi-funnel"></i>
+                <span data-ts-multiselect-label>@Model.ButtonLabel</span>
+                <span class="badge rounded-pill ts-multiselect-count @(totalSelectedCount == 0 ? "d-none" : string.Empty)"
+                      data-ts-multiselect-count>
+                    @totalSelectedCount
+                </span>
+            </button>
 
-        <div class="dropdown-menu ts-multiselect-menu shadow border-0 p-3">
-            <div class="ts-multiselect-section-title">@Model.PrimaryGroupTitle</div>
+            <div class="dropdown-menu ts-multiselect-menu shadow border-0 p-3">
+                @if (Model.ShowPrimaryFilter)
+                {
+                    <div class="ts-multiselect-section-title">@Model.PrimaryGroupTitle</div>
 
-            @if (!Model.PrimaryOptions.Any())
-            {
-                <div class="text-muted small py-2">@Model.PrimaryEmptyMessage</div>
-            }
-            else
-            {
-                <div class="ts-multiselect-options d-flex flex-column gap-1">
-                    @foreach (var option in Model.PrimaryOptions)
+                    @if (!Model.PrimaryOptions.Any())
                     {
-                        <label class="ts-multiselect-option d-flex align-items-center justify-content-between gap-2">
-                            <span class="d-flex align-items-center gap-2 text-truncate">
-                                <input class="form-check-input mt-0 ts-multiselect-checkbox"
-                                       type="checkbox"
-                                       name="@Model.PrimaryParamName"
-                                       value="@option.Id"
-                                       checked="@(option.IsSelected ? "checked" : null)" />
-                                <span class="text-truncate">@option.Label</span>
-                            </span>
-
-                            @if (!option.IsActive)
-                            {
-                                <span class="badge rounded-pill bg-secondary-subtle text-secondary flex-shrink-0">Inactivo</span>
-                            }
-                        </label>
+                        <div class="text-muted small py-2">@Model.PrimaryEmptyMessage</div>
                     }
-                </div>
-            }
+                    else
+                    {
+                        <div class="ts-multiselect-options d-flex flex-column gap-1">
+                            @foreach (var option in Model.PrimaryOptions)
+                            {
+                                <label class="ts-multiselect-option d-flex align-items-center justify-content-between gap-2">
+                                    <span class="d-flex align-items-center gap-2 text-truncate">
+                                        <input class="form-check-input mt-0 ts-multiselect-checkbox"
+                                               type="checkbox"
+                                               name="@Model.PrimaryParamName"
+                                               value="@option.Id"
+                                               checked="@(option.IsSelected ? "checked" : null)" />
+                                        <span class="text-truncate">@option.Label</span>
+                                    </span>
 
-            @if (Model.ShowStatusFilter)
-            {
-                <hr class="my-2 opacity-15" />
-                <div class="ts-multiselect-section-title">Estado</div>
-                <div class="d-flex flex-column gap-1">
-                    <label class="ts-multiselect-option d-flex align-items-center gap-2">
-                        <input class="form-check-input mt-0 ts-multiselect-checkbox"
-                               type="checkbox"
-                               name="statuses"
-                               value="@TechStore.Helpers.CatalogFilterHelper.ActiveStatusValue"
-                               checked="@(Model.SelectedStatuses.Contains(TechStore.Helpers.CatalogFilterHelper.ActiveStatusValue) ? "checked" : null)" />
-                        <span>@Model.ActiveStatusLabel</span>
-                    </label>
-                    <label class="ts-multiselect-option d-flex align-items-center gap-2">
-                        <input class="form-check-input mt-0 ts-multiselect-checkbox"
-                               type="checkbox"
-                               name="statuses"
-                               value="@TechStore.Helpers.CatalogFilterHelper.InactiveStatusValue"
-                               checked="@(Model.SelectedStatuses.Contains(TechStore.Helpers.CatalogFilterHelper.InactiveStatusValue) ? "checked" : null)" />
-                        <span>@Model.InactiveStatusLabel</span>
-                    </label>
-                </div>
-            }
+                                    @if (!option.IsActive)
+                                    {
+                                        <span class="badge rounded-pill bg-secondary-subtle text-secondary flex-shrink-0">Inactivo</span>
+                                    }
+                                </label>
+                            }
+                        </div>
+                    }
+                }
 
-            <div class="d-flex justify-content-between align-items-center gap-2 pt-2 mt-2 border-top">
-                <button type="button"
-                        class="btn btn-outline-secondary btn-sm px-3"
-                        data-ts-multiselect-clear>
-                    Limpiar
-                </button>
-                <button type="submit" class="btn btn-primary btn-sm px-3">
-                    <i class="bi bi-check2 me-1"></i>Aplicar
-                </button>
+                @if (Model.ShowStatusFilter)
+                {
+                    @if (Model.ShowPrimaryFilter)
+                    {
+                        <hr class="my-2 opacity-15" />
+                    }
+                    <div class="ts-multiselect-section-title">Estado</div>
+                    <div class="d-flex flex-column gap-1">
+                        <label class="ts-multiselect-option d-flex align-items-center gap-2">
+                            <input class="form-check-input mt-0 ts-multiselect-checkbox"
+                                   type="checkbox"
+                                   name="statuses"
+                                   value="@TechStore.Services.CatalogFilterHelper.ActiveStatusValue"
+                                   checked="@(Model.SelectedStatuses.Contains(TechStore.Services.CatalogFilterHelper.ActiveStatusValue) ? "checked" : null)" />
+                            <span>@Model.ActiveStatusLabel</span>
+                        </label>
+                        <label class="ts-multiselect-option d-flex align-items-center gap-2">
+                            <input class="form-check-input mt-0 ts-multiselect-checkbox"
+                                   type="checkbox"
+                                   name="statuses"
+                                   value="@TechStore.Services.CatalogFilterHelper.InactiveStatusValue"
+                                   checked="@(Model.SelectedStatuses.Contains(TechStore.Services.CatalogFilterHelper.InactiveStatusValue) ? "checked" : null)" />
+                            <span>@Model.InactiveStatusLabel</span>
+                        </label>
+                    </div>
+                }
+
+                <div class="d-flex justify-content-between align-items-center gap-2 pt-2 mt-2 border-top">
+                    <button type="button"
+                            class="btn btn-outline-secondary btn-sm px-3"
+                            data-ts-multiselect-clear>
+                        Limpiar
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-sm px-3">
+                        <i class="bi bi-check2 me-1"></i>Aplicar
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
 
-    @if (hasActiveFilters)
-    {
-        <a asp-controller="@Model.ControllerName"
-           asp-action="@Model.ActionName"
-           class="btn btn-outline-secondary btn-sm px-3">
-            <i class="bi bi-x-circle me-1"></i>Limpiar filtros
-        </a>
+        @if (hasActiveFilters)
+        {
+            <a asp-controller="@Model.ControllerName"
+               asp-action="@Model.ActionName"
+               class="btn btn-outline-secondary btn-sm px-3">
+                <i class="bi bi-x-circle me-1"></i>Limpiar filtros
+            </a>
 
-        <span class="badge rounded-pill bg-light text-secondary border px-3 py-2 fw-normal">
-            @Model.ResultCount @Model.ResultLabel
-        </span>
-    }
-</form>
+            <span class="badge rounded-pill bg-light text-secondary border px-3 py-2 fw-normal">
+                @Model.ResultCount @Model.ResultLabel
+            </span>
+        }
+    </form>
+}
