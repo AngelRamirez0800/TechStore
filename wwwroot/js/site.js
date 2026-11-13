@@ -2,34 +2,56 @@
 
 $(function () {
 
-    $(document).on("submit", "form.swal-delete-form", function (e) {
-
+    $(document).on("submit", "form.swal-delete-form, form.swal-confirm-form", function (e) {
         e.preventDefault();
 
         const form = this;
+        const $form = $(form);
+        const isDelete = $form.hasClass("swal-delete-form");
+
+        const title = $form.data("swal-title") || "¿Estás seguro?";
+        const text = $form.data("swal-text") || (isDelete
+            ? "El elemento será desactivado."
+            : "¿Deseas confirmar esta acción?");
+        const confirmText = $form.data("swal-confirm") || (isDelete
+            ? "Sí, desactivar"
+            : "Sí, confirmar");
+        const confirmColor = $form.data("swal-color") || (isDelete ? "#dc3545" : "#0077b6");
+
+        if (typeof Swal === "undefined") {
+            form.submit();
+            return;
+        }
 
         Swal.fire({
-            title: "¿Estás seguro?",
-            text: "El elemento será desactivado.",
+            title: title,
+            text: text,
             icon: "warning",
-
             showCancelButton: true,
-
-            confirmButtonColor: "#dc3545",
+            confirmButtonColor: confirmColor,
             cancelButtonColor: "#6c757d",
-
-            confirmButtonText: "Sí, desactivar",
+            confirmButtonText: confirmText,
             cancelButtonText: "Cancelar",
-
             reverseButtons: true
         }).then(function (result) {
-
             if (result.isConfirmed) {
                 form.submit();
             }
-
         });
+    });
 
+    $(document).on("click", "[data-toggle-password]", function () {
+        const targetSelector = $(this).data("toggle-password");
+        const $input = targetSelector ? $(targetSelector) : $(this).closest(".input-group").find("input");
+        if (!$input.length) return;
+
+        const isPassword = $input.attr("type") === "password";
+        $input.attr("type", isPassword ? "text" : "password");
+
+        const $icon = $(this).find("i");
+        if ($icon.length) {
+            $icon.toggleClass("bi-eye bi-eye-slash");
+        }
     });
 
 });

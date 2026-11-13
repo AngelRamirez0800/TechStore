@@ -2,70 +2,65 @@
 
 @{
     ViewData["Title"] = "Editar categoría";
-    var products = ViewBag.Products as IEnumerable<TechStore.Models.Product> ?? Enumerable.Empty<TechStore.Models.Product>();
+    var products = ViewBag.Products as IEnumerable<TechStore.Models.Product>
+        ?? Enumerable.Empty<TechStore.Models.Product>();
+
+    var heroModel = new HeroBannerViewModel(
+        title: $"Editar categoría · {Model.Name}",
+        subtitle: "Actualiza el nombre, descripción, estado y los productos asociados a esta categoría.",
+        eyebrow: "Gestión de Categorías");
 }
 
-<div class="titulo-nuevo mb-4 text-white rounded-3 hero-section py-3">
-    <h1>Editar categoría</h1>
-</div>
+<partial name="_HeroBanner" model="heroModel" />
 
-@if (TempData["CategorySuccess"] != null)
-{
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        @TempData["CategorySuccess"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-    </div>
-}
-@if (TempData["CategoryError"] != null)
-{
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        @TempData["CategoryError"]
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
-    </div>
-}
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+        <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
 
-<form asp-action="Edit" asp-route-id="@Model.Id" method="post">
-    <div class="row">
-        <div class="col-md-12">
-            <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
-
-            <div class="mb-5">
-                <label asp-for="Name">Nombre</label>
+            <div class="mb-3">
+                <label asp-for="Name" class="form-label fw-semibold">Nombre</label>
                 <input asp-for="Name" class="form-control" />
-                <span asp-validation-for="Name"></span>
+                <span asp-validation-for="Name" class="text-danger small"></span>
             </div>
 
-            <div class="mb-5">
-                <label asp-for="Description">Descripción</label>
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label fw-semibold">Descripción</label>
                 <textarea asp-for="Description" class="form-control" rows="3"></textarea>
-                <span asp-validation-for="Description"></span>
+                <span asp-validation-for="Description" class="text-danger small"></span>
             </div>
 
-            <div class="form-check mb-5">
+            <div class="form-check mb-3">
                 <input asp-for="IsActive" class="form-check-input" />
-                <label asp-for="IsActive" class="form-check-label">Activo</label>
+                <label asp-for="IsActive" class="form-check-label fw-semibold">Categoría activa</label>
             </div>
 
-            <div class="mb-5">
-                <label>Productos</label>
-                <select name="selectedProductIds" multiple class="form-control">
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Productos asociados</label>
+                <select name="selectedProductIds" multiple class="form-select" size="6">
                     @foreach (var product in products)
                     {
                         var selected = Model.Products.Any(categoryProduct => categoryProduct.Id == product.Id);
                         <option value="@product.Id" selected="@selected">@product.Name</option>
                     }
                 </select>
+                <div class="form-text">Mantén Ctrl (o Cmd) para seleccionar o deseleccionar productos.</div>
             </div>
 
-            <div class="d-flex gap-2">
-                <div class="mb-5">
-                    <button type="submit" class="btn btn-success">Guardar cambios</button>
-                    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
-                </div>
+            <div class="d-flex gap-2 pt-3 border-top flex-wrap">
+                <button type="submit" class="btn btn-success rounded-pill px-4">
+                    <i class="bi bi-save me-1"></i>Guardar cambios
+                </button>
+                <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary rounded-pill px-4">
+                    Ver detalle
+                </a>
+                <a asp-action="Index" class="btn btn-outline-primary rounded-pill px-4">
+                    Volver al listado
+                </a>
             </div>
-        </div>
+        </form>
     </div>
-</form>
+</div>
 
 @section Scripts {
     @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }

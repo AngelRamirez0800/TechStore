@@ -1,165 +1,188 @@
 @model List<TechStore.Models.Product>
+@inject IAuthorizationService AuthorizationService
 
 @{
     ViewData["Title"] = "Inicio";
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var canReadProducts = isAuthenticated && (await AuthorizationService.AuthorizeAsync(User, AppPermissions.ProductsRead)).Succeeded;
+    var canReadCategories = isAuthenticated && (await AuthorizationService.AuthorizeAsync(User, AppPermissions.CategoriesRead)).Succeeded;
+
+    var heroModel = canReadProducts
+        ? new HeroBannerViewModel(
+            title: "Bienvenido a TechStore",
+            subtitle: "Tu tienda de confianza en tecnología: laptops, smartphones, audio y accesorios al mejor precio, con la calidad que buscas.",
+            eyebrow: "Catálogo Tecnológico",
+            ctaText: "Ver productos",
+            ctaController: "Products",
+            ctaAction: "Index")
+        : new HeroBannerViewModel(
+            title: "Bienvenido a TechStore",
+            subtitle: "Tu tienda de confianza en tecnología: laptops, smartphones, audio y accesorios al mejor precio, con la calidad que buscas.",
+            eyebrow: "Innovación y Tecnología",
+            ctaText: isAuthenticated ? "Contáctenos" : "Iniciar sesión",
+            ctaController: isAuthenticated ? "Contacto" : "Account",
+            ctaAction: isAuthenticated ? "Index" : "Login");
 }
 
-<div class="contenedor-inicio mb-5 text-white rounded-3 hero-section">
-    <div class="container-fluid py-5">
-
-        <h1 class="display-5 fw-bold">
-            Bienvenido a TechStore
-        </h1>
-
-        <p class="col-md-8 fs-5">
-            Tu tienda de confianza en tecnología: laptops,
-            smartphones, audio y accesorios al mejor precio,
-            con la calidad que buscas.
-        </p>
-
-        <a asp-controller="Products"
-           asp-action="Index"
-           class="btn btn-light btn-lg mt-2">
-
-            <i class="bi bi-bag"></i>
-            Ver productos
-
-        </a>
-    </div>
-</div>
+<partial name="_HeroBanner" model="heroModel" />
 
 <img class="componente-decorativo"
      src="~/Images/Componentes/descargam - copia.jpeg"
      alt="componente1" />
 
+@if (isAuthenticated && canReadProducts)
+{
+    <vc:catalog-stats />
+}
+else if (!isAuthenticated)
+{
+    <div class="card border-0 shadow-sm guest-cta-card mb-4">
+        <div class="card-body p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h2 class="h5 fw-bold text-navy mb-1">
+                    <i class="bi bi-compass text-primary me-2"></i>Inicia sesión para explorar el catálogo completo
+                </h2>
+                <p class="text-muted mb-0 small">
+                    Accede al inventario actualizado por categorías, disponibilidad en tiempo real y fichas detalladas de cada equipo.
+                </p>
+            </div>
+            <div class="d-flex flex-wrap gap-2 flex-shrink-0">
+                <a asp-controller="Account" asp-action="Login" class="btn btn-primary rounded-pill px-4">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>Iniciar sesión
+                </a>
+                <a asp-controller="Account" asp-action="Register" class="btn btn-outline-primary rounded-pill px-4">
+                    <i class="bi bi-person-plus me-1"></i>Crear cuenta
+                </a>
+            </div>
+        </div>
+    </div>
+}
+
 <hr />
 
-<div class="iconos-inicio row text-center mb-5 g-3">
+<div class="iconos-inicio row text-center mb-5 g-3 justify-content-center">
+    @if (canReadProducts)
+    {
+        <div class="col-6 col-md-3">
+            <a asp-controller="Products"
+               asp-action="Index"
+               class="card quick-link-card h-100 border-0 shadow-sm p-3 text-decoration-none text-dark">
+                <i class="bi bi-box-seam display-6 text-primary"></i>
+                <p class="mt-2 mb-0 fw-bolder">Productos</p>
+            </a>
+        </div>
+    }
+    else if (!isAuthenticated)
+    {
+        <div class="col-6 col-md-3">
+            <a asp-controller="Account"
+               asp-action="Login"
+               class="card quick-link-card h-100 border-0 shadow-sm p-3 text-decoration-none text-dark">
+                <i class="bi bi-box-arrow-in-right display-6 text-primary"></i>
+                <p class="mt-2 mb-0 fw-bolder">Iniciar sesión</p>
+            </a>
+        </div>
+    }
+
+    @if (canReadCategories)
+    {
+        <div class="col-6 col-md-3">
+            <a asp-controller="Category"
+               asp-action="Index"
+               class="card quick-link-card h-100 border-0 shadow-sm p-3 text-decoration-none text-dark">
+                <i class="bi bi-grid display-6 text-primary"></i>
+                <p class="mt-2 mb-0 fw-bolder">Categorías</p>
+            </a>
+        </div>
+    }
+    else if (!isAuthenticated)
+    {
+        <div class="col-6 col-md-3">
+            <a asp-controller="Account"
+               asp-action="Register"
+               class="card quick-link-card h-100 border-0 shadow-sm p-3 text-decoration-none text-dark">
+                <i class="bi bi-person-plus display-6 text-primary"></i>
+                <p class="mt-2 mb-0 fw-bolder">Crear cuenta</p>
+            </a>
+        </div>
+    }
 
     <div class="col-6 col-md-3">
-
-        <a asp-controller="Products"
-           asp-action="Index"
-           class="text-decoration-none text-dark">
-
-            <i class="bi bi-box-seam display-6 text-primary"></i>
-
-            <p class="mt-2 fw-bolder">
-                Productos
-            </p>
-
-        </a>
-
-    </div>
-
-    <div class="col-6 col-md-3">
-
-        <a asp-controller="Category"
-           asp-action="Index"
-           class="text-decoration-none text-dark">
-
-            <i class="bi bi-grid display-6 text-primary"></i>
-
-            <p class="mt-2 fw-bolder">
-                Categorías
-            </p>
-
-        </a>
-
-    </div>
-
-    <div class="col-6 col-md-3">
-
         <a asp-controller="Contacto"
            asp-action="Index"
-           class="text-decoration-none text-dark">
-
+           class="card quick-link-card h-100 border-0 shadow-sm p-3 text-decoration-none text-dark">
             <i class="bi bi-envelope display-6 text-primary"></i>
-
-            <p class="mt-2 fw-bolder">
-                Contáctenos
-            </p>
-
+            <p class="mt-2 mb-0 fw-bolder">Contáctenos</p>
         </a>
-
     </div>
 
     <div class="col-6 col-md-3">
-
         <a asp-controller="About"
            asp-action="Index"
-           class="text-decoration-none text-dark">
-
+           class="card quick-link-card h-100 border-0 shadow-sm p-3 text-decoration-none text-dark">
             <i class="bi bi-info-circle display-6 text-primary"></i>
-
-            <p class="mt-2 fw-bolder">
-                Nosotros
-            </p>
-
+            <p class="mt-2 mb-0 fw-bolder">Nosotros</p>
         </a>
-
     </div>
-
 </div>
 
 <hr />
 
-<div class="productos-texto-inicio mb-4 d-flex justify-content-between text-primary align-items-center">
+<div class="productos-texto-inicio mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <h2 class="text-navy fw-bold mb-0">Productos Destacados</h2>
 
-    <h2>Productos Destacados</h2>
-
-    <a asp-controller="Products"
-       asp-action="Index"
-       class="btn btn-outline-primary btn-sm">
-
-        Ver todos
-
-    </a>
-
+    @if (canReadProducts)
+    {
+        <a asp-controller="Products"
+           asp-action="Index"
+           class="btn btn-outline-primary btn-sm rounded-pill px-3">
+            Ver todos <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+    }
+    else if (!isAuthenticated)
+    {
+        <a asp-controller="Account"
+           asp-action="Login"
+           class="btn btn-outline-primary btn-sm rounded-pill px-3">
+            Inicia sesión para ver el catálogo <i class="bi bi-lock ms-1"></i>
+        </a>
+    }
 </div>
 
 @if (Model != null && Model.Any())
 {
     <div class="productos-inicio row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
-
         @foreach (var product in Model)
         {
             <div class="col">
-
-                <partial name="_ProductCard"
-                         model="product" />
-
+                <partial name="_ProductCard" model="product" />
             </div>
         }
-
     </div>
 }
 else
 {
-    <div class="alert alert-info">
+    <div class="alert alert-info shadow-sm">
+        <i class="bi bi-info-circle me-2"></i>
         No hay productos destacados disponibles.
     </div>
 }
 
 <div id="carouselExample"
-     class="carrusel-anuncio carousel slide">
+     class="carrusel-anuncio carousel slide rounded-4 overflow-hidden shadow-sm">
 
     <div class="carousel-inner">
 
         <div class="carousel-item active">
-
             <img src="~/Images/Anuncios/AnuncioAudifonos.jpg"
                  class="d-block w-100"
                  alt="Anuncio de audífonos">
-
         </div>
 
         <div class="carousel-item">
-
             <img src="~/Images/Anuncios/AnuncioTeclado.jpg"
                  class="d-block w-100"
                  alt="Anuncio de teclado">
-
         </div>
 
     </div>
@@ -168,30 +191,16 @@ else
             type="button"
             data-bs-target="#carouselExample"
             data-bs-slide="prev">
-
-        <span class="carousel-control-prev-icon"
-              aria-hidden="true">
-        </span>
-
-        <span class="visually-hidden">
-            Previous
-        </span>
-
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Anterior</span>
     </button>
 
     <button class="carousel-control-next"
             type="button"
             data-bs-target="#carouselExample"
             data-bs-slide="next">
-
-        <span class="carousel-control-next-icon"
-              aria-hidden="true">
-        </span>
-
-        <span class="visually-hidden">
-            Next
-        </span>
-
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Siguiente</span>
     </button>
 
 </div>

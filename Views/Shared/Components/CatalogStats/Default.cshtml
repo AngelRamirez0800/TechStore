@@ -1,0 +1,68 @@
+@model TechStore.ViewComponents.CatalogStatsViewModel
+
+@{
+    var colClass = Model.ShowInactiveCount ? "col-6 col-lg-3" : "col-12 col-md-4";
+}
+
+<section class="catalog-stats mb-4" aria-label="Resumen del catálogo">
+    <div class="row g-3">
+        <div class="@colClass">
+            <div class="card kpi-stat-card kpi-stat-primary h-100 border-0 shadow-sm">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-box">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <div>
+                        <span class="kpi-label d-block text-muted small">Productos activos</span>
+                        <span class="kpi-value fs-4 fw-bold">@Model.ActiveProductsCount</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="@colClass">
+            <div class="card kpi-stat-card kpi-stat-cyan h-100 border-0 shadow-sm">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-box">
+                        <i class="bi bi-tags"></i>
+                    </div>
+                    <div>
+                        <span class="kpi-label d-block text-muted small">Categorías activas</span>
+                        <span class="kpi-value fs-4 fw-bold">@Model.ActiveCategoriesCount</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="@colClass">
+            <div class="card kpi-stat-card kpi-stat-teal h-100 border-0 shadow-sm">
+                <div class="card-body d-flex align-items-center gap-3">
+                    <div class="kpi-icon-box">
+                        <i class="bi bi-stack"></i>
+                    </div>
+                    <div>
+                        <span class="kpi-label d-block text-muted small">Stock total</span>
+                        <span class="kpi-value fs-4 fw-bold">@Model.TotalStock</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @if (Model.ShowInactiveCount)
+        {
+            <div class="@colClass">
+                <div class="card kpi-stat-card kpi-stat-slate h-100 border-0 shadow-sm">
+                    <div class="card-body d-flex align-items-center gap-3">
+                        <div class="kpi-icon-box">
+                            <i class="bi bi-archive"></i>
+                        </div>
+                        <div>
+                            <span class="kpi-label d-block text-muted small">Productos inactivos</span>
+                            <span class="kpi-value fs-4 fw-bold">@Model.InactiveProductsCount</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</section>

@@ -1,10 +1,14 @@
 @{
     ViewData["Title"] = "Acerca de nosotros";
+    var heroModel = new HeroBannerViewModel(
+        title: "Acerca de nosotros",
+        subtitle: "Conoce nuestra historia, visión, misión y los valores que impulsan a TechStore.",
+        eyebrow: "Nuestra Empresa");
 }
 
-<div class="acerca-title mb-4 text-white rounded-3 hero-section py-3">
-    <h1>Acerca de nosotros</h1>
-</div>
+<partial name="_HeroBanner" model="heroModel" />
+
+<partial name="_AlertsPartial" />
 
 <img class="componente-decorativo"
      src="~/Images/Componentes/descargam - copia.jpeg"

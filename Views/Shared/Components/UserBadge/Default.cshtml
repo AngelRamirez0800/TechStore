@@ -1,0 +1,31 @@
+@model TechStore.ViewComponents.UserBadgeViewModel
+
+<div class="user-badge d-inline-flex align-items-center flex-wrap gap-2 px-3 py-1 rounded-pill bg-white border shadow-sm">
+    <i class="bi bi-person-circle text-primary fs-6"></i>
+    <span class="fw-semibold text-dark small">@Model.UserName</span>
+
+    @foreach (var role in Model.Roles)
+    {
+        var isAdmin = string.Equals(role, AppRoles.Admin, StringComparison.OrdinalIgnoreCase);
+        var isClient = string.Equals(role, AppRoles.Client, StringComparison.OrdinalIgnoreCase);
+
+        if (isAdmin)
+        {
+            <span class="badge rounded-pill role-badge role-badge-admin">
+                <i class="bi bi-shield-lock-fill me-1"></i>@role
+            </span>
+        }
+        else if (isClient)
+        {
+            <span class="badge rounded-pill role-badge role-badge-client">
+                <i class="bi bi-person-check-fill me-1"></i>@role
+            </span>
+        }
+        else
+        {
+            <span class="badge rounded-pill role-badge role-badge-custom">
+                <i class="bi bi-award-fill me-1"></i>@role
+            </span>
+        }
+    }
+</div>

@@ -1,0 +1,26 @@
+@model TechStore.ViewComponents.StockBadgeViewModel
+
+@if (!Model.IsActive)
+{
+    <span class="badge rounded-pill stock-badge stock-badge-inactive">
+        <i class="bi bi-pause-circle me-1"></i>No disponible
+    </span>
+}
+else if (Model.Stock <= 0)
+{
+    <span class="badge rounded-pill stock-badge stock-badge-empty">
+        <i class="bi bi-x-circle me-1"></i>Sin stock
+    </span>
+}
+else if (Model.Stock <= 5)
+{
+    <span class="badge rounded-pill stock-badge stock-badge-low">
+        <i class="bi bi-exclamation-triangle me-1"></i>Stock bajo (@Model.Stock)
+    </span>
+}
+else
+{
+    <span class="badge rounded-pill stock-badge stock-badge-ok">
+        <i class="bi bi-check-circle me-1"></i>En stock (@Model.Stock)
+    </span>
+}

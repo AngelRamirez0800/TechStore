@@ -1,0 +1,111 @@
+@model TechStore.Models.Product
+@inject IAuthorizationService AuthorizationService
+
+@{
+    var orderedImages = (Model.Images ?? Enumerable.Empty<TechStore.Models.ProductImage>())
+        .OrderBy(i => i.ImageNumber)
+        .ToList();
+
+    var canEdit = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.ProductsEdit)).Succeeded;
+    var allowDelete = canEdit && (ViewData["AllowImageDelete"] as bool? ?? true);
+    var carouselId = $"productGallery-{Model.Id:N}";
+}
+
+@if (!orderedImages.Any())
+{
+    <div class="card border-0 bg-light text-center p-5 rounded-4 shadow-sm">
+        <i class="bi bi-images display-4 text-muted mb-2"></i>
+        <p class="text-muted mb-0">Este producto aún no tiene imágenes registradas.</p>
+    </div>
+}
+else
+{
+    <div class="product-gallery">
+        <div id="@carouselId" class="carousel slide bg-white rounded-4 shadow-sm border p-3 mb-3" data-bs-ride="false">
+            <div class="carousel-inner">
+                @for (var i = 0; i < orderedImages.Count; i++)
+                {
+                    var img = orderedImages[i];
+                    var normalizedPath = "/" + img.ImagePath.Replace("\\", "/").TrimStart('/');
+
+                    <div class="carousel-item @(i == 0 ? "active" : string.Empty)">
+                        <div class="position-relative text-center product-gallery-main">
+                            @if (img.ImageNumber == 1)
+                            {
+                                <span class="badge bg-primary position-absolute top-0 start-0 m-2 rounded-pill">
+                                    <i class="bi bi-star-fill me-1"></i>Principal
+                                </span>
+                            }
+                            <span class="badge bg-dark bg-opacity-75 position-absolute top-0 end-0 m-2 rounded-pill">
+                                #@(i + 1) / @orderedImages.Count
+                            </span>
+                            <img src="@normalizedPath"
+                                 alt="@Model.Name - Imagen @img.ImageNumber"
+                                 class="img-fluid rounded-3"
+                                 style="max-height: 360px; object-fit: contain;" />
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (orderedImages.Count > 1)
+            {
+                <button class="carousel-control-prev" type="button" data-bs-target="#@carouselId" data-bs-slide="prev">
+                    <span class="carousel-control-prev-icon bg-dark bg-opacity-50 rounded-circle p-3" aria-hidden="true"></span>
+                    <span class="visually-hidden">Anterior</span>
+                </button>
+                <button class="carousel-control-next" type="button" data-bs-target="#@carouselId" data-bs-slide="next">
+                    <span class="carousel-control-next-icon bg-dark bg-opacity-50 rounded-circle p-3" aria-hidden="true"></span>
+                    <span class="visually-hidden">Siguiente</span>
+                </button>
+            }
+        </div>
+
+        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-2">
+            @for (var i = 0; i < orderedImages.Count; i++)
+            {
+                var img = orderedImages[i];
+                var normalizedPath = "/" + img.ImagePath.Replace("\\", "/").TrimStart('/');
+
+                <div class="col">
+                    <div class="card h-100 border shadow-sm product-gallery-thumb @(i == 0 ? "border-primary" : string.Empty)">
+                        <button type="button"
+                                class="btn p-2 border-0 bg-transparent text-center w-100"
+                                data-bs-target="#@carouselId"
+                                data-bs-slide-to="@i"
+                                aria-label="Ver imagen @img.ImageNumber">
+                            <img src="@normalizedPath"
+                                 alt="@img.OriginalFileName"
+                                 class="img-fluid rounded"
+                                 style="height: 75px; object-fit: contain;" />
+                        </button>
+                        <div class="card-footer bg-white border-0 pt-0 px-2 pb-2 text-center">
+                            <div class="small text-muted text-truncate" title="@img.OriginalFileName">
+                                #@img.ImageNumber · @img.FormattedFileSize
+                            </div>
+
+                            @if (allowDelete)
+                            {
+                                <form asp-controller="Products"
+                                      asp-action="RemoveImage"
+                                      method="post"
+                                      class="mt-1 swal-confirm-form"
+                                      data-swal-title="¿Eliminar imagen?"
+                                      data-swal-text="La imagen #@img.ImageNumber se eliminará de forma permanente."
+                                      data-swal-confirm="Sí, eliminar"
+                                      data-swal-color="#dc3545">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="imageId" value="@img.Id" />
+                                    <input type="hidden" name="productId" value="@Model.Id" />
+                                    <button type="submit" class="btn btn-outline-danger btn-sm w-100 py-0">
+                                        <i class="bi bi-trash me-1"></i>Eliminar
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+}

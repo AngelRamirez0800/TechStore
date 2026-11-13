@@ -1,146 +1,117 @@
 @model List<TechStore.Models.Product>
+@inject IAuthorizationService AuthorizationService
+@inject TechStore.Interfaces.ICategoryQueries CategoryQueries
 
 @{
     ViewData["Title"] = "Productos";
+
+    var canCreate = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.ProductsCreate)).Succeeded;
+    var canLifecycle = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.ProductsLifecycle)).Succeeded;
+
+    Guid? selectedCategoryId = Guid.TryParse(Context.Request.Query["categoryId"], out var parsedCategoryId)
+        ? parsedCategoryId
+        : ViewBag.SelectedCategoryId as Guid?;
+
+    var activeCategories = (await CategoryQueries.GetAllActiveAsync())
+        .OrderBy(c => c.Name)
+        .ToList();
+
+    var selectedCategory = selectedCategoryId.HasValue
+        ? activeCategories.FirstOrDefault(c => c.Id == selectedCategoryId.Value)
+        : null;
+
+    var visibleProducts = (Model ?? new List<TechStore.Models.Product>())
+        .Where(p => canLifecycle || p.IsActive)
+        .Where(p => !selectedCategoryId.HasValue || p.Categories.Any(c => c.Id == selectedCategoryId.Value))
+        .ToList();
+
+    var heroSubtitle = canCreate || canLifecycle
+        ? "Administración del catálogo, existencias y precios de TechStore."
+        : "Explora los dispositivos y accesorios tecnológicos disponibles en TechStore.";
+
+    var heroModel = new HeroBannerViewModel(
+        title: selectedCategory != null ? $"Productos · {selectedCategory.Name}" : "Productos",
+        subtitle: heroSubtitle,
+        eyebrow: "Catálogo TechStore");
 }
 
-<div class="titulo-nuevo mb-4 text-white rounded-3 hero-section py-3">
-    <h1>Productos</h1>
-</div>
+<partial name="_HeroBanner" model="heroModel" />
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<vc:catalog-stats />
+
+<div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
     <div>
         <p class="text-muted mb-0">
-            Administración de productos de TechStore
+            Mostrando <strong>@visibleProducts.Count</strong> @(visibleProducts.Count == 1 ? "producto" : "productos")
+            @if (selectedCategory != null)
+            {
+                <span>en la categoría <strong class="text-navy">@selectedCategory.Name</strong></span>
+            }
         </p>
     </div>
 
-    <a asp-controller="Products"
-       asp-action="Create"
-       class="btn btn-primary">
-        <i class="bi bi-plus-circle me-1"></i>
-        Nuevo producto
-    </a>
+    @if (canCreate)
+    {
+        <a asp-controller="Products"
+           asp-action="Create"
+           class="btn btn-primary rounded-pill px-4">
+            <i class="bi bi-plus-circle me-1"></i>
+            Nuevo producto
+        </a>
+    }
 </div>
+
+@if (activeCategories.Any())
+{
+    <div class="category-filter-pills d-flex flex-wrap align-items-center gap-2 mb-4" aria-label="Filtrar por categoría">
+        <span class="small text-muted fw-semibold me-1">
+            <i class="bi bi-funnel me-1"></i>Filtrar:
+        </span>
+
+        <a asp-controller="Products"
+           asp-action="Index"
+           class="btn btn-sm rounded-pill category-pill @(!selectedCategoryId.HasValue ? "active" : "btn-outline-secondary")">
+            Todas
+        </a>
+
+        @foreach (var category in activeCategories)
+        {
+            var isSelected = selectedCategoryId == category.Id;
+            <a href="@Url.Action("Index", "Products", new { categoryId = category.Id })"
+               class="btn btn-sm rounded-pill category-pill @(isSelected ? "active" : "btn-outline-primary")">
+                @category.Name
+            </a>
+        }
+    </div>
+}
 
 <img class="componente-decorativo" src="~/Images/Componentes/descargam - copia.jpeg" alt="componente1" />
 
-@if (Model == null || !Model.Any())
+@if (!visibleProducts.Any())
 {
-    <div class="alert alert-info">
-        <i class="bi bi-info-circle me-2"></i>
-        No hay productos registrados.
+    <div class="alert alert-info shadow-sm d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div>
+            <i class="bi bi-info-circle me-2"></i>
+            @(selectedCategory != null
+                ? $"No hay productos registrados en la categoría \"{selectedCategory.Name}\"."
+                : "No hay productos registrados.")
+        </div>
+        @if (selectedCategory != null)
+        {
+            <a asp-controller="Products" asp-action="Index" class="btn btn-sm btn-outline-primary rounded-pill">
+                Ver todos los productos
+            </a>
+        }
     </div>
 }
 else
 {
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-
-        @foreach (var product in Model)
+        @foreach (var product in visibleProducts)
         {
-            var primaryImage = product.Images.FirstOrDefault();
-
             <div class="col">
-                <div class="card h-100 shadow-sm">
-
-                    @if (primaryImage != null)
-                    {
-                        <img src="@Url.Content("~/" + primaryImage.ImagePath)"
-                             class="card-img-top p-3"
-                             alt="@product.Name"
-                             style="height: 220px; object-fit: contain;" />
-                    }
-                    else
-                    {
-                        <div class="d-flex justify-content-center align-items-center bg-light"
-                             style="height: 220px;">
-                            <div class="text-center text-muted">
-                                <i class="bi bi-image fs-1"></i>
-                                <p class="mb-0">Sin imagen</p>
-                            </div>
-                        </div>
-                    }
-
-                    <div class="card-body d-flex flex-column">
-
-                        <div class="mb-2">
-                            @if (product.Categories.Any())
-                            {
-                                @foreach (var category in product.Categories)
-                                {
-                                    <span class="badge bg-primary me-1">
-                                        @category.Name
-                                    </span>
-                                }
-                            }
-                            else
-                            {
-                                <span class="badge bg-light text-dark">
-                                    Sin categoría
-                                </span>
-                            }
-                        </div>
-
-                        <h5 class="card-title">@product.Name</h5>
-
-                        <p class="card-text text-muted small flex-grow-1">
-                            @product.Description
-                        </p>
-
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-bold fs-5">
-                                @product.Price.ToString("C2")
-                            </span>
-
-                            @if (product.IsActive)
-                            {
-                                <span class="badge bg-success">Activo</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-danger">Inactivo</span>
-                            }
-                        </div>
-
-                        <div class="mb-3">
-                            <small class="text-muted">
-                                <i class="bi bi-box-seam"></i>
-                                Stock: @product.Stock
-                            </small>
-
-                            @if (product.Featured)
-                            {
-                                <span class="badge bg-warning text-dark ms-2">
-                                    <i class="bi bi-star-fill"></i>
-                                    Destacado
-                                </span>
-                            }
-                        </div>
-
-                        <div class="d-grid gap-2">
-
-                            <a asp-controller="Products"
-                               asp-action="Details"
-                               asp-route-id="@product.Id"
-                               class="btn btn-outline-primary">
-                                <i class="bi bi-eye"></i>
-                                Ver detalles
-                            </a>
-
-                            <a asp-controller="Products"
-                               asp-action="Edit"
-                               asp-route-id="@product.Id"
-                               class="btn btn-outline-primary">
-                                <i class="bi bi-pencil"></i>
-                                Editar
-                            </a>
-
-                        </div>
-
-                    </div>
-                </div>
+                <partial name="_ProductCard" model="product" />
             </div>
         }
-
     </div>
 }

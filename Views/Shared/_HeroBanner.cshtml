@@ -1,0 +1,37 @@
+@model TechStore.Models.HeroBannerViewModel
+
+@if (Model != null)
+{
+    <section class="techstore-hero rounded-4 text-white p-4 p-md-5 mb-4 shadow-sm">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3">
+            <div>
+                @if (!string.IsNullOrWhiteSpace(Model.Eyebrow))
+                {
+                    <span class="techstore-eyebrow d-inline-flex align-items-center gap-1 mb-2">
+                        <i class="bi bi-cpu"></i>
+                        @Model.Eyebrow
+                    </span>
+                }
+
+                <h1 class="fw-bold mb-2">@Model.Title</h1>
+
+                @if (!string.IsNullOrWhiteSpace(Model.Subtitle))
+                {
+                    <p class="mb-0 text-white-75 fs-6 col-lg-10">@Model.Subtitle</p>
+                }
+            </div>
+
+            @if (!string.IsNullOrWhiteSpace(Model.CtaText) && !string.IsNullOrWhiteSpace(Model.CtaController))
+            {
+                <div class="flex-shrink-0">
+                    <a asp-controller="@Model.CtaController"
+                       asp-action="@(string.IsNullOrWhiteSpace(Model.CtaAction) ? "Index" : Model.CtaAction)"
+                       class="btn btn-light btn-lg rounded-pill px-4 fw-semibold shadow-sm text-primary">
+                        @Model.CtaText
+                        <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            }
+        </div>
+    </section>
+}

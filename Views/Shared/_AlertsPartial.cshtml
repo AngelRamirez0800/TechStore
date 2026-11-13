@@ -1,0 +1,49 @@
+@{
+    const string renderedKeysItem = "__TechStoreRenderedAlertKeys";
+
+    if (Context.Items[renderedKeysItem] is not HashSet<string> renderedKeys)
+    {
+        renderedKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        Context.Items[renderedKeysItem] = renderedKeys;
+    }
+
+    var alertDefinitions = new (string Key, string CssClass, string IconClass)[]
+    {
+        ("SuccessMessage", "alert-success", "bi-check-circle-fill"),
+        ("Success", "alert-success", "bi-check-circle-fill"),
+        ("CategorySuccess", "alert-success", "bi-check-circle-fill"),
+        ("MensajeEnviado", "alert-success", "bi-check-circle-fill"),
+        ("ErrorMessage", "alert-danger", "bi-exclamation-octagon-fill"),
+        ("Error", "alert-danger", "bi-exclamation-octagon-fill"),
+        ("CategoryError", "alert-danger", "bi-exclamation-octagon-fill"),
+        ("WarningMessage", "alert-warning", "bi-exclamation-triangle-fill"),
+        ("Warning", "alert-warning", "bi-exclamation-triangle-fill"),
+        ("InfoMessage", "alert-info", "bi-info-circle-fill"),
+        ("Info", "alert-info", "bi-info-circle-fill")
+    };
+
+    var alertsToShow = new List<(string Message, string CssClass, string IconClass)>();
+
+    foreach (var def in alertDefinitions)
+    {
+        if (!renderedKeys.Contains(def.Key) && TempData[def.Key] is string message && !string.IsNullOrWhiteSpace(message))
+        {
+            renderedKeys.Add(def.Key);
+            alertsToShow.Add((message, def.CssClass, def.IconClass));
+        }
+    }
+}
+
+@if (alertsToShow.Any())
+{
+    <div class="techstore-alerts-container mb-3">
+        @foreach (var alert in alertsToShow)
+        {
+            <div class="alert @alert.CssClass techstore-alert alert-dismissible fade show shadow-sm d-flex align-items-center gap-2" role="alert">
+                <i class="bi @alert.IconClass flex-shrink-0"></i>
+                <div class="flex-grow-1">@alert.Message</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+            </div>
+        }
+    </div>
+}

@@ -1,192 +1,147 @@
 @model TechStore.Models.Category
+@inject IAuthorizationService AuthorizationService
 
 @{
     ViewData["Title"] = "Detalles de la categoría";
 
-    var producto = ViewBag.Products as IEnumerable<TechStore.Models.Product>
-        ?? Enumerable.Empty<TechStore.Models.Product>();
+    var canEdit = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.CategoriesEdit)).Succeeded;
+    var canLifecycle = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.CategoriesLifecycle)).Succeeded;
+    var canReadProducts = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.ProductsRead)).Succeeded;
+    var canLifecycleProducts = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.ProductsLifecycle)).Succeeded;
+
+    var visibleProducts = (Model.Products ?? Enumerable.Empty<TechStore.Models.Product>())
+        .Where(p => canLifecycleProducts || p.IsActive)
+        .OrderBy(p => p.Name)
+        .ToList();
+
+    var heroModel = new HeroBannerViewModel(
+        title: Model.Name,
+        subtitle: "Consulta la información de la categoría y los productos asociados.",
+        eyebrow: "Detalle de Categoría");
 }
 
-<div class="titulo-nuevo mb-4 text-white rounded-3 hero-section py-3">
+<partial name="_HeroBanner" model="heroModel" />
 
-    <h1>
-        Detalles de la categoría
-    </h1>
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+            <h2 class="h3 fw-bold text-uppercase text-navy mb-0">@Model.Name</h2>
 
-</div>
-
-<div class="row">
-
-    <div class="col-md-12">
-
-        <div class="card">
-
-            <div class="card-body shadow-sm">
-
-                <h3 style="color: midnightblue;"
-                    class="fw-bold text-uppercase">
-
-                    @Model.Name
-
-                </h3>
-
-                <p class="text-muted">
-                    @Model.Description
-                </p>
-
-                <dl class="row">
-
-                    @if (Model.IsActive)
-                    {
-                        <dt class="col-sm-4">
-                            Activo
-                        </dt>
-
-                        <dd class="col-sm-8 fw-bold"
-                            style="color:dodgerblue;">
-                            @Model.IsActive
-                        </dd>
-                    }
-                    else
-                    {
-                        <dt class="col-sm-4">
-                            Activo
-                        </dt>
-
-                        <dd class="col-sm-8 fw-bold"
-                            style="color:slategrey;">
-                            @Model.IsActive
-                        </dd>
-                    }
-
-                    <dt class="col-sm-4">
-                        Productos
-                    </dt>
-
-                    <dd class="col-sm-8 fw-semibold">
-                        @Model.Products.Count
-                    </dd>
-
-                    <dt class="col-sm-4">
-                        Fecha de creación
-                    </dt>
-
-                    <dd class="col-sm-8 fw-semibold">
-                        @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-                    </dd>
-
-                </dl>
-
-            </div>
-
+            @if (Model.IsActive)
+            {
+                <span class="badge rounded-pill bg-success px-3 py-2">Activa</span>
+            }
+            else
+            {
+                <span class="badge rounded-pill bg-secondary px-3 py-2">Inactiva</span>
+            }
         </div>
 
-    </div>
+        <p class="text-muted mb-4">@Model.Description</p>
 
+        <dl class="row mb-0">
+            <dt class="col-sm-4 text-muted">Productos visibles</dt>
+            <dd class="col-sm-8 fw-semibold">@visibleProducts.Count</dd>
+
+            <dt class="col-sm-4 text-muted">Fecha de creación</dt>
+            <dd class="col-sm-8 fw-semibold">@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</dd>
+        </dl>
+    </div>
 </div>
 
-<h4 class="mt-4"
-    style="color: midnightblue; margin-bottom:15px;">
+<div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <h3 class="h4 fw-bold text-navy mb-0">Productos de la categoría</h3>
 
-    Productos de la categoría
+    @if (canReadProducts && visibleProducts.Any())
+    {
+        <a href="@Url.Action("Index", "Products", new { categoryId = Model.Id })"
+           class="btn btn-outline-primary btn-sm rounded-pill px-3">
+            <i class="bi bi-funnel me-1"></i>Ver en catálogo de productos
+        </a>
+    }
+</div>
 
-</h4>
-
-@if (Model.Products.Any())
+@if (visibleProducts.Any())
 {
-    <div class="list-group mb-4">
-
-        @foreach (var product in Model.Products)
+    <div class="list-group shadow-sm mb-4">
+        @foreach (var product in visibleProducts)
         {
-            <div class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-2">
-
-                <div>
-
-                    <i class="bi bi-box-seam me-2 text-primary"></i>
-
-                    <strong>
-                        @product.Name
-                    </strong>
-
+            <div class="list-group-item d-flex justify-content-between align-items-center flex-wrap gap-3 py-3">
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    <i class="bi bi-box-seam text-primary"></i>
+                    <strong>@product.Name</strong>
+                    <span class="text-primary fw-semibold">@product.Price.ToString("C2")</span>
+                    <vc:stock-badge stock="@product.Stock" is-active="@product.IsActive" />
                 </div>
 
-                <a asp-controller="Products"
-                   asp-action="Details"
-                   asp-route-id="@product.Id"
-                   class="btn btn-outline-primary btn-sm">
-
-                    Ver producto
-
-                    <i class="bi bi-arrow-right ms-1"></i>
-
-                </a>
-
+                @if (canReadProducts)
+                {
+                    <a asp-controller="Products"
+                       asp-action="Details"
+                       asp-route-id="@product.Id"
+                       class="btn btn-outline-primary btn-sm rounded-pill px-3">
+                        Ver producto <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                }
             </div>
         }
-
     </div>
 }
 else
 {
-    <div class="alert alert-secondary">
-
+    <div class="alert alert-secondary shadow-sm mb-4">
         <i class="bi bi-info-circle me-1"></i>
-
-        Esta categoría aún no tiene productos asociados.
-
+        Esta categoría aún no tiene productos disponibles asociados.
     </div>
 }
 
-<div class="d-flex gap-3 flex-wrap">
+<div class="d-flex gap-2 flex-wrap">
+    @if (canEdit)
+    {
+        <a class="btn btn-primary rounded-pill px-4"
+           asp-action="Edit"
+           asp-route-id="@Model.Id">
+            <i class="bi bi-pencil me-1"></i>Editar
+        </a>
+    }
 
-    <a class="btn btn-primary"
-       asp-action="Edit"
-       asp-route-id="@Model.Id">
-
-        Editar
-
-    </a>
-
-    <a class="btn btn-secondary"
+    <a class="btn btn-outline-secondary rounded-pill px-4"
        asp-action="Index">
-
-        Volver
-
+        <i class="bi bi-arrow-left me-1"></i>Volver
     </a>
 
-    @if (Model.IsActive)
+    @if (canLifecycle)
     {
-        <form asp-action="Deactivate"
-              method="post"
-              asp-route-id="@Model.Id"
-              class="d-inline swal-delete-form">
-
-            <button type="submit"
-                    class="btn btn-danger">
-
-                <i class="bi bi-x-circle me-1"></i>
-                Desactivar
-
-            </button>
-
-        </form>
+        @if (Model.IsActive)
+        {
+            <form asp-action="Deactivate"
+                  method="post"
+                  asp-route-id="@Model.Id"
+                  class="d-inline swal-delete-form"
+                  data-swal-title="¿Desactivar categoría?"
+                  data-swal-text="Si no tiene productos asociados, la categoría pasará a estado inactivo."
+                  data-swal-confirm="Sí, desactivar">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-danger rounded-pill px-4">
+                    <i class="bi bi-x-circle me-1"></i>Desactivar
+                </button>
+            </form>
+        }
+        else
+        {
+            <form asp-action="Restore"
+                  method="post"
+                  asp-route-id="@Model.Id"
+                  class="d-inline swal-confirm-form"
+                  data-swal-title="¿Reactivar categoría?"
+                  data-swal-text="La categoría volverá a estar disponible en el catálogo."
+                  data-swal-confirm="Sí, reactivar"
+                  data-swal-color="#198754">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="btn btn-success rounded-pill px-4">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar
+                </button>
+            </form>
+        }
     }
-    else
-    {
-        <form asp-action="Restore"
-              method="post"
-              asp-route-id="@Model.Id"
-              class="d-inline">
-
-            <button type="submit"
-                    class="btn btn-success">
-
-                <i class="bi bi-arrow-counterclockwise me-1"></i>
-                Reactivar
-
-            </button>
-
-        </form>
-    }
-
 </div>

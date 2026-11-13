@@ -1,93 +1,166 @@
 @model TechStore.Models.Product
+@inject IAuthorizationService AuthorizationService
 
 @{
     var primaryImage = Model.Images != null && Model.Images.Any()
-        ? Model.Images
-            .OrderBy(image => image.ImageNumber)
-            .FirstOrDefault()
+        ? Model.Images.OrderBy(image => image.ImageNumber).FirstOrDefault()
         : null;
 
     string? imagePath = null;
-
     if (primaryImage != null)
     {
-        imagePath = primaryImage.ImagePath.Replace("\\", "/");
-
-        if (!imagePath.StartsWith("/"))
-        {
-            imagePath = "/" + imagePath;
-        }
+        imagePath = "/" + primaryImage.ImagePath.Replace("\\", "/").TrimStart('/');
     }
 
-    var categoryName = Model.Categories != null &&
-                       Model.Categories.Any()
-        ? string.Join(", ", Model.Categories.Select(c => c.Name))
-        : "Sin categoría";
+    var categories = Model.Categories?.OrderBy(c => c.Name).ToList() ?? new List<TechStore.Models.Category>();
+
+    var canRead = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.ProductsRead)).Succeeded;
+    var canEdit = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.ProductsEdit)).Succeeded;
+    var canLifecycle = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.ProductsLifecycle)).Succeeded;
 }
 
-<div class="card h-100 shadow-sm product-card">
+<div class="card h-100 border-0 shadow-sm product-card">
+    <div class="position-relative bg-light rounded-top">
+        @if (!string.IsNullOrEmpty(imagePath))
+        {
+            <img src="@imagePath"
+                 class="card-img-top p-3"
+                 alt="@Model.Name"
+                 style="height: 210px; object-fit: contain;" />
+        }
+        else
+        {
+            <div class="d-flex flex-column justify-content-center align-items-center text-muted"
+                 style="height: 210px;">
+                <i class="bi bi-image fs-1"></i>
+                <span class="small">Sin imagen</span>
+            </div>
+        }
 
-    @if (!string.IsNullOrEmpty(imagePath))
-    {
-        <img src="@imagePath"
-             class="card-img-top p-3"
-             alt="@Model.Name"
-             style="height: 200px; object-fit: contain;" />
-    }
-    else
-    {
-        <div class="d-flex justify-content-center align-items-center bg-light text-muted"
-             style="height: 200px;">
+        <div class="position-absolute top-0 end-0 p-2 d-flex flex-column align-items-end gap-1">
+            @if (Model.Featured)
+            {
+                <span class="badge rounded-pill bg-warning text-dark shadow-sm">
+                    <i class="bi bi-star-fill me-1"></i>Destacado
+                </span>
+            }
 
-            <span>Sin imagen</span>
-
+            @if (canLifecycle)
+            {
+                @if (Model.IsActive)
+                {
+                    <span class="badge rounded-pill bg-success shadow-sm">Activo</span>
+                }
+                else
+                {
+                    <span class="badge rounded-pill bg-secondary shadow-sm">Inactivo</span>
+                }
+            }
         </div>
-    }
+    </div>
 
     <div class="card-body d-flex flex-column">
+        <div class="mb-2 d-flex flex-wrap gap-1">
+            @if (categories.Any())
+            {
+                @foreach (var category in categories)
+                {
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">
+                        @category.Name
+                    </span>
+                }
+            }
+            else
+            {
+                <span class="badge bg-secondary-subtle text-secondary">Sin categoría</span>
+            }
+        </div>
 
-        <span class="badge bg-secondary align-self-start mb-2">
-            @categoryName
-        </span>
-
-        <h5 class="card-title">
-            @Model.Name
-        </h5>
+        <h5 class="card-title fw-bold text-navy">@Model.Name</h5>
 
         <p class="card-text text-muted small flex-grow-1">
             @Model.Description
         </p>
 
-        <div class="d-flex justify-content-between align-items-center mb-2">
-
-            <span class="fw-bold fs-5">
-                @Model.Price.ToString("C")
+        <div class="d-flex justify-content-between align-items-center gap-2 mb-3 pt-2 border-top">
+            <span class="fw-bold fs-5 text-primary">
+                @Model.Price.ToString("C2")
             </span>
 
-            @if (Model.IsActive && Model.Stock > 0)
-            {
-                <span class="badge bg-success">
-                    Disponible
-                </span>
-            }
-            else
-            {
-                <span class="badge bg-danger">
-                    Agotado
-                </span>
-            }
-
+            <vc:stock-badge stock="@Model.Stock" is-active="@Model.IsActive" />
         </div>
 
-        <a asp-controller="Products"
-           asp-action="Details"
-           asp-route-id="@Model.Id"
-           class="btn btn-primary mt-auto">
+        <div class="d-grid gap-2 mt-auto">
+            @if (canRead)
+            {
+                <a asp-controller="Products"
+                   asp-action="Details"
+                   asp-route-id="@Model.Id"
+                   class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-eye me-1"></i>Ver detalle
+                </a>
+            }
+            else if (User.Identity?.IsAuthenticated != true)
+            {
+                <a asp-controller="Account"
+                   asp-action="Login"
+                   asp-route-returnUrl="@Url.Action("Details", "Products", new { id = Model.Id })"
+                   class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-lock me-1"></i>Inicia sesión para ver
+                </a>
+            }
 
-            Ver detalle
+            @if (canEdit || canLifecycle)
+            {
+                <div class="d-flex gap-2">
+                    @if (canEdit)
+                    {
+                        <a asp-controller="Products"
+                           asp-action="Edit"
+                           asp-route-id="@Model.Id"
+                           class="btn btn-primary btn-sm flex-grow-1">
+                            <i class="bi bi-pencil me-1"></i>Editar
+                        </a>
+                    }
 
-        </a>
-
+                    @if (canLifecycle)
+                    {
+                        @if (Model.IsActive)
+                        {
+                            <form asp-controller="Products"
+                                  asp-action="Deactivate"
+                                  asp-route-id="@Model.Id"
+                                  method="post"
+                                  class="flex-grow-1 swal-delete-form"
+                                  data-swal-title="¿Desactivar producto?"
+                                  data-swal-text="El producto dejará de mostrarse a los clientes."
+                                  data-swal-confirm="Sí, desactivar">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-outline-danger btn-sm w-100">
+                                    <i class="bi bi-x-circle me-1"></i>Desactivar
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <form asp-controller="Products"
+                                  asp-action="Restore"
+                                  asp-route-id="@Model.Id"
+                                  method="post"
+                                  class="flex-grow-1 swal-confirm-form"
+                                  data-swal-title="¿Reactivar producto?"
+                                  data-swal-text="El producto volverá a estar disponible en el catálogo."
+                                  data-swal-confirm="Sí, reactivar"
+                                  data-swal-color="#198754">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-outline-success btn-sm w-100">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reactivar
+                                </button>
+                            </form>
+                        }
+                    }
+                </div>
+            }
+        </div>
     </div>
-
 </div>

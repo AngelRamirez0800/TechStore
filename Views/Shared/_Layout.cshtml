@@ -1,3 +1,5 @@
+@inject IAuthorizationService AuthorizationService
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -23,20 +25,21 @@
           asp-append-version="true" />
 </head>
 
-<body>
+<body class="d-flex flex-column min-vh-100">
 
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm border-bottom box-shadow mb-3"
+        <nav class="navbar navbar-expand-lg border-bottom box-shadow mb-3 techstore-navbar"
              style="background-color: #DEE9FF;"
              data-bs-theme="light">
 
-            <div class="container-fluid">
+            <div class="container-fluid px-lg-4">
 
-                <a class="navbar-brand"
+                <a class="navbar-brand fw-bold d-flex align-items-center gap-2 text-navy"
                    asp-area=""
                    asp-controller="Home"
                    asp-action="Index">
-                    TechStore
+                    <i class="bi bi-cpu-fill text-primary"></i>
+                    <span>TechStore</span>
                 </a>
 
                 <button class="navbar-toggler"
@@ -45,49 +48,64 @@
                         data-bs-target=".navbar-collapse"
                         aria-controls="navbarSupportedContent"
                         aria-expanded="false"
-                        aria-label="Toggle navigation">
-
+                        aria-label="Mostrar u ocultar navegación">
                     <span class="navbar-toggler-icon"></span>
-
                 </button>
 
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+                <div class="navbar-collapse collapse justify-content-between align-items-lg-center">
 
-                    <ul class="navbar-nav flex-grow-1">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 gap-1 align-items-lg-center">
 
                         <li class="nav-item">
                             <a class="nav-link text-dark btn btn-outline-light"
                                asp-area=""
                                asp-controller="Home"
                                asp-action="Index">
-                                Inicio
+                                <i class="bi bi-house-door me-1"></i>Inicio
                             </a>
                         </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link text-dark btn btn-outline-light"
-                               asp-area=""
-                               asp-controller="Products"
-                               asp-action="Index">
-                                Productos
-                            </a>
-                        </li>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            var canReadProducts = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.ProductsRead)).Succeeded;
+                            var canReadCategories = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.CategoriesRead)).Succeeded;
 
-                        <li class="nav-item">
-                            <a class="nav-link text-dark btn btn-outline-light"
-                               asp-area=""
-                               asp-controller="Category"
-                               asp-action="Index">
-                                Categorías
-                            </a>
-                        </li>
+                            @if (canReadProducts)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark btn btn-outline-light"
+                                       asp-area=""
+                                       asp-controller="Products"
+                                       asp-action="Index">
+                                        <i class="bi bi-box-seam me-1"></i>Productos
+                                    </a>
+                                </li>
+                            }
+
+                            @if (canReadCategories)
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link text-dark btn btn-outline-light"
+                                       asp-area=""
+                                       asp-controller="Category"
+                                       asp-action="Index">
+                                        <i class="bi bi-grid me-1"></i>Categorías
+                                    </a>
+                                </li>
+                            }
+
+                            @if (canReadProducts)
+                            {
+                                <vc:category-menu />
+                            }
+                        }
 
                         <li class="nav-item">
                             <a class="nav-link text-dark btn btn-outline-light"
                                asp-area=""
                                asp-controller="Contacto"
                                asp-action="Index">
-                                Contáctenos
+                                <i class="bi bi-envelope me-1"></i>Contáctenos
                             </a>
                         </li>
 
@@ -96,54 +114,50 @@
                                asp-area=""
                                asp-controller="About"
                                asp-action="Index">
-                                Acerca de nosotros
+                                <i class="bi bi-info-circle me-1"></i>Acerca de nosotros
                             </a>
                         </li>
 
                     </ul>
+
+                    <partial name="_LoginPartial" />
 
                 </div>
             </div>
         </nav>
     </header>
 
-    <div class="container">
-
-        <main role="main" class="pb-3">
+    <div class="container flex-grow-1">
+        <main role="main" class="pb-4">
+            <partial name="_AlertsPartial" />
             @RenderBody()
         </main>
-
     </div>
 
-    <footer class="border-top footer text-muted py-3 mt-4">
-
-        <div class="container d-flex flex-wrap justify-content-between">
-
-            <span>
+    <footer class="border-top footer text-muted py-3 mt-auto bg-light">
+        <div class="container d-flex flex-column flex-md-row justify-content-between align-items-center gap-2 small">
+            <span class="fw-medium text-dark">
+                <i class="bi bi-cpu text-primary me-1"></i>
                 &copy; 2026 - TechStore. Todos los derechos reservados.
             </span>
 
-            <span>
-                <i class="bi bi-envelope"></i>
-                contacto@techstore.com
-                &nbsp;|&nbsp;
-                <i class="bi bi-telephone"></i>
-                +503 2222-3333
-            </span>
-
+            <div class="d-flex flex-wrap align-items-center justify-content-center gap-3">
+                <a class="text-decoration-none text-muted" asp-controller="About" asp-action="Index">Acerca de nosotros</a>
+                <a class="text-decoration-none text-muted" asp-controller="Contacto" asp-action="Index">Contáctenos</a>
+                <span>
+                    <i class="bi bi-envelope text-primary me-1"></i>contacto@techstore.com
+                </span>
+                <span>
+                    <i class="bi bi-telephone text-primary me-1"></i>+503 2222-3333
+                </span>
+            </div>
         </div>
-
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-    <script src="~/js/site.js"
-            asp-append-version="true"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
 
     @await RenderSectionAsync("Scripts", required: false)
 
