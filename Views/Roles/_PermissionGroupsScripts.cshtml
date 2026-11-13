@@ -1,0 +1,16 @@
+<script>
+    $(function () {
+        $(".js-select-all-perms").on("click", function () {
+            $(".js-perm-checkbox").prop("checked", true);
+        });
+        $(".js-clear-all-perms").on("click", function () {
+            $(".js-perm-checkbox").prop("checked", false);
+        });
+        $(".js-toggle-group").on("click", function () {
+            const group = $(this).data("group");
+            const checkboxes = $('.js-perm-checkbox[data-group="' + group + '"]');
+            const allChecked = checkboxes.length > 0 && checkboxes.filter(":checked").length === checkboxes.length;
+            checkboxes.prop("checked", !allChecked);
+        });
+    });
+</script>

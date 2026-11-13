@@ -1,0 +1,97 @@
+@model IReadOnlyCollection<string>
+
+@{
+    var selectedSet = (Model ?? Array.Empty<string>())
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    var lockAdminCore = ViewData["LockAdminCorePermissions"] is true;
+    var permissionGroups = AppPermissions.All.GroupBy(p => p.Group).ToList();
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <span class="text-muted small">
+        <i class="bi bi-shield-check me-1 text-primary"></i>
+        Selecciona los permisos granulares que tendrá este rol.
+    </span>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill js-select-all-perms">
+            <i class="bi bi-check2-all me-1"></i>Seleccionar todos
+        </button>
+        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill js-clear-all-perms">
+            <i class="bi bi-x-lg me-1"></i>Limpiar opcionales
+        </button>
+    </div>
+</div>
+
+<div class="row row-cols-1 row-cols-lg-3 g-4">
+    @foreach (var group in permissionGroups)
+    {
+        var groupIcon = group.Key switch
+        {
+            "Productos" => "bi-box-seam",
+            "Categorías" => "bi-tags",
+            _ => "bi-shield-lock"
+        };
+
+        <div class="col">
+            <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header d-flex justify-content-between align-items-center py-3 px-3 text-white"
+                     style="background-color: #1b263b;">
+                    <span class="fw-semibold">
+                        <i class="bi @groupIcon me-2"></i>@group.Key
+                    </span>
+                    <button type="button"
+                            class="btn btn-sm btn-outline-light rounded-pill py-0 px-2 js-toggle-group"
+                            data-group="@group.Key"
+                            title="Alternar permisos de @group.Key">
+                        Alternar
+                    </button>
+                </div>
+
+                <div class="card-body d-flex flex-column gap-3">
+                    @foreach (var permission in group)
+                    {
+                        var inputId = "perm_" + permission.Key.Replace(".", "_");
+                        var isLocked = lockAdminCore &&
+                            (string.Equals(permission.Key, AppPermissions.RolesManage, StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(permission.Key, AppPermissions.UsersManage, StringComparison.OrdinalIgnoreCase));
+                        var isChecked = isLocked || selectedSet.Contains(permission.Key);
+
+                        <div class="form-check form-switch border rounded-3 p-2 ps-5 bg-light bg-opacity-50">
+                            @if (isLocked)
+                            {
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       id="@inputId"
+                                       checked
+                                       disabled />
+                                <input type="hidden" name="SelectedPermissions" value="@permission.Key" />
+                            }
+                            else
+                            {
+                                <input class="form-check-input js-perm-checkbox"
+                                       data-group="@group.Key"
+                                       type="checkbox"
+                                       name="SelectedPermissions"
+                                       value="@permission.Key"
+                                       id="@inputId"
+                                       @(isChecked ? "checked" : null) />
+                            }
+
+                            <label class="form-check-label d-block" for="@inputId">
+                                <span class="fw-semibold text-dark">@permission.Label</span>
+                                @if (isLocked)
+                                {
+                                    <span class="badge bg-warning text-dark rounded-pill ms-1">Obligatorio</span>
+                                }
+                                <span class="d-block mt-1">
+                                    <code class="small px-2 py-0 rounded bg-white border text-primary">@permission.Key</code>
+                                </span>
+                                <small class="d-block text-muted mt-1">@permission.Description</small>
+                            </label>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>

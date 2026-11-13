@@ -1,0 +1,236 @@
+@model IReadOnlyList<RoleSummaryDto>
+@inject IAuthorizationService AuthorizationService
+
+@{
+    ViewData["Title"] = "Roles y Permisos";
+    var canManageUsers = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.UsersManage)).Succeeded;
+    var builtInCount = Model.Count(r => r.IsBuiltIn);
+    var customCount = Model.Count - builtInCount;
+}
+
+<div class="rounded-4 shadow-sm text-white p-4 mb-4"
+     style="background: linear-gradient(135deg, #1b263b 0%, #0077b6 100%);">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <span class="badge bg-light text-dark rounded-pill mb-2 px-3 py-1">
+                <i class="bi bi-shield-lock me-1 text-primary"></i>Seguridad y Control de Acceso
+            </span>
+            <h1 class="h2 fw-bold mb-1">Roles y Permisos</h1>
+            <p class="mb-0 text-white-50">
+                Administra los roles de TechStore, sus permisos granulares y los usuarios asignados.
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            @if (canManageUsers)
+            {
+                <a asp-action="Users" class="btn btn-outline-light rounded-pill px-4">
+                    <i class="bi bi-people me-1"></i>Gestionar usuarios
+                </a>
+            }
+            <a asp-action="Create" class="btn btn-light text-primary fw-semibold rounded-pill px-4 shadow-sm">
+                <i class="bi bi-plus-circle me-1"></i>Nuevo rol
+            </a>
+        </div>
+    </div>
+</div>
+
+<partial name="_AlertsPartial" />
+
+<div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+    <div class="col">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center text-white"
+                     style="width: 48px; height: 48px; background-color: #1b263b;">
+                    <i class="bi bi-diagram-3 fs-5"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Total de roles</div>
+                    <div class="h4 fw-bold mb-0">@Model.Count</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center text-white"
+                     style="width: 48px; height: 48px; background-color: #0077b6;">
+                    <i class="bi bi-patch-check fs-5"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Roles base protegidos</div>
+                    <div class="h4 fw-bold mb-0">@builtInCount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center bg-info text-dark"
+                     style="width: 48px; height: 48px;">
+                    <i class="bi bi-sliders fs-5"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Roles personalizados</div>
+                    <div class="h4 fw-bold mb-0">@customCount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info rounded-4 shadow-sm">
+        <i class="bi bi-info-circle me-2"></i>No hay roles registrados en el sistema.
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="text-white" style="background-color: #1b263b;">
+                    <tr>
+                        <th class="ps-4 py-3">Rol</th>
+                        <th class="py-3">Tipo</th>
+                        <th class="py-3 text-center">Permisos</th>
+                        <th class="py-3 text-center">Usuarios</th>
+                        <th class="pe-4 py-3 text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var role in Model)
+                    {
+                        var canDelete = !role.IsBuiltIn && role.UserCount == 0;
+                        var deleteBlockedReason = role.IsBuiltIn
+                            ? "Los roles base del sistema no pueden eliminarse."
+                            : "No se puede eliminar un rol que tiene usuarios asignados.";
+
+                        <tr>
+                            <td class="ps-4 fw-semibold">
+                                <span style="color: #1b263b;">@role.Name</span>
+                            </td>
+                            <td>
+                                @if (role.IsBuiltIn)
+                                {
+                                    <span class="badge rounded-pill px-3 py-2 text-white"
+                                          style="background-color: #1b263b;">
+                                        <i class="bi bi-lock-fill me-1"></i>Rol base
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge rounded-pill px-3 py-2 bg-light text-dark border">
+                                        <i class="bi bi-tag me-1 text-primary"></i>Personalizado
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <span class="badge rounded-pill px-3 py-2 text-white"
+                                      style="background-color: #0077b6;">
+                                    @role.PermissionCount permiso(s)
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-secondary rounded-pill px-3 py-2">
+                                    @role.UserCount usuario(s)
+                                </span>
+                            </td>
+                            <td class="pe-4 text-end">
+                                <div class="d-inline-flex flex-wrap justify-content-end gap-1">
+                                    <a asp-action="Details"
+                                       asp-route-id="@role.Id"
+                                       class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                        <i class="bi bi-eye me-1"></i>Detalles
+                                    </a>
+                                    <a asp-action="Permissions"
+                                       asp-route-id="@role.Id"
+                                       class="btn btn-sm btn-outline-info text-dark rounded-pill px-3">
+                                        <i class="bi bi-key me-1"></i>Permisos
+                                    </a>
+                                    <a asp-action="Edit"
+                                       asp-route-id="@role.Id"
+                                       class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                                        <i class="bi bi-pencil me-1"></i>Editar
+                                    </a>
+
+                                    @if (canDelete)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger rounded-pill px-3 js-open-delete-modal"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#deleteRoleModal"
+                                                data-role-id="@role.Id"
+                                                data-role-name="@role.Name">
+                                            <i class="bi bi-trash me-1"></i>Eliminar
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary rounded-pill px-3 opacity-50"
+                                                disabled
+                                                title="@deleteBlockedReason">
+                                            <i class="bi bi-trash me-1"></i>Eliminar
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<div class="modal fade" id="deleteRoleModal" tabindex="-1" aria-labelledby="deleteRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow rounded-4">
+            <div class="modal-header text-white rounded-top-4" style="background-color: #1b263b;">
+                <h5 class="modal-title" id="deleteRoleModalLabel">
+                    <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>Confirmar eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-2">
+                    ¿Estás seguro de que deseas eliminar permanentemente el rol
+                    <strong id="deleteRoleNameDisplay"></strong>?
+                </p>
+                <p class="text-muted small mb-0">
+                    Esta acción no se puede deshacer y eliminará también sus permisos configurados.
+                </p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                    Cancelar
+                </button>
+                <form asp-action="Delete" method="post" class="d-inline">
+                    <input type="hidden" name="id" id="deleteRoleIdInput" value="" />
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">
+                        <i class="bi bi-trash me-1"></i>Sí, eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $("#deleteRoleModal").on("show.bs.modal", function (event) {
+                const trigger = $(event.relatedTarget);
+                const roleId = trigger.data("role-id") || "";
+                const roleName = trigger.data("role-name") || "";
+                $("#deleteRoleIdInput").val(roleId);
+                $("#deleteRoleNameDisplay").text("«" + roleName + "»");
+            });
+        });
+    </script>
+}

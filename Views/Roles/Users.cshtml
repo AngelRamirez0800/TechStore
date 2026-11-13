@@ -1,0 +1,253 @@
+@model IReadOnlyList<UserSummaryDto>
+@inject IAuthorizationService AuthorizationService
+
+@{
+    ViewData["Title"] = "Gestión de Usuarios";
+    var currentUserId = ViewBag.CurrentUserId as string;
+    var canManageRoles = (await AuthorizationService.AuthorizeAsync(User, AppPermissions.RolesManage)).Succeeded;
+    var lockedCount = Model.Count(u => u.IsLockedOut);
+    var activeCount = Model.Count - lockedCount;
+}
+
+<div class="rounded-4 shadow-sm text-white p-4 mb-4"
+     style="background: linear-gradient(135deg, #1b263b 0%, #0077b6 100%);">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <span class="badge bg-light text-dark rounded-pill mb-2 px-3 py-1">
+                <i class="bi bi-people-fill me-1 text-primary"></i>Administración de Cuentas
+            </span>
+            <h1 class="h2 fw-bold mb-1">Gestión de Usuarios</h1>
+            <p class="mb-0 text-white-50">
+                Asigna roles a las cuentas registradas y administra bloqueos de acceso.
+            </p>
+        </div>
+        @if (canManageRoles)
+        {
+            <a asp-action="Index" class="btn btn-light text-primary fw-semibold rounded-pill px-4 shadow-sm">
+                <i class="bi bi-shield-lock me-1"></i>Roles y permisos
+            </a>
+        }
+    </div>
+</div>
+
+<partial name="_AlertsPartial" />
+
+<div class="row row-cols-1 row-cols-md-3 g-3 mb-4">
+    <div class="col">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center text-white"
+                     style="width: 48px; height: 48px; background-color: #1b263b;">
+                    <i class="bi bi-person-lines-fill fs-5"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Usuarios registrados</div>
+                    <div class="h4 fw-bold mb-0">@Model.Count</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center bg-success text-white"
+                     style="width: 48px; height: 48px;">
+                    <i class="bi bi-person-check fs-5"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Cuentas activas</div>
+                    <div class="h4 fw-bold mb-0">@activeCount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="rounded-circle d-flex align-items-center justify-content-center bg-danger text-white"
+                     style="width: 48px; height: 48px;">
+                    <i class="bi bi-person-lock fs-5"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Cuentas bloqueadas</div>
+                    <div class="h4 fw-bold mb-0">@lockedCount</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info rounded-4 shadow-sm">
+        <i class="bi bi-info-circle me-2"></i>No hay usuarios registrados.
+    </div>
+}
+else
+{
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="text-white" style="background-color: #1b263b;">
+                    <tr>
+                        <th class="ps-4 py-3">Usuario</th>
+                        <th class="py-3">Correo</th>
+                        <th class="py-3">Roles</th>
+                        <th class="py-3 text-center">Intentos fallidos</th>
+                        <th class="py-3 text-center">Estado</th>
+                        <th class="pe-4 py-3 text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        var isSelf = !string.IsNullOrWhiteSpace(currentUserId) &&
+                            string.Equals(user.Id, currentUserId, StringComparison.Ordinal);
+
+                        <tr>
+                            <td class="ps-4 fw-semibold">
+                                <span style="color: #1b263b;">@user.UserName</span>
+                                @if (isSelf)
+                                {
+                                    <span class="badge bg-info text-dark rounded-pill ms-1">Tú</span>
+                                }
+                            </td>
+                            <td>
+                                <span class="text-muted">@user.Email</span>
+                                @if (user.EmailConfirmed)
+                                {
+                                    <i class="bi bi-patch-check-fill text-success ms-1" title="Correo confirmado"></i>
+                                }
+                            </td>
+                            <td>
+                                @if (user.Roles.Any())
+                                {
+                                    <div class="d-flex flex-wrap gap-1">
+                                        @foreach (var roleName in user.Roles)
+                                        {
+                                            var roleColor = string.Equals(roleName, AppRoles.Admin, StringComparison.OrdinalIgnoreCase)
+                                                ? "#1b263b"
+                                                : string.Equals(roleName, AppRoles.Client, StringComparison.OrdinalIgnoreCase)
+                                                    ? "#0077b6"
+                                                    : "#495057";
+
+                                            <span class="badge rounded-pill text-white px-3 py-1"
+                                                  style="background-color: @roleColor;">
+                                                @roleName
+                                            </span>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-light text-muted border rounded-pill">Sin roles</span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <span class="badge @(user.AccessFailedCount > 0 ? "bg-warning text-dark" : "bg-light text-dark border") rounded-pill px-3">
+                                    @user.AccessFailedCount
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                @if (user.IsLockedOut)
+                                {
+                                    <span class="badge bg-danger rounded-pill px-3 py-2"
+                                          title="Bloqueado hasta @user.LockoutEnd?.LocalDateTime.ToString("dd/MM/yyyy HH:mm")">
+                                        <i class="bi bi-lock-fill me-1"></i>Bloqueado
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success rounded-pill px-3 py-2">
+                                        <i class="bi bi-unlock-fill me-1"></i>Activo
+                                    </span>
+                                }
+                            </td>
+                            <td class="pe-4 text-end">
+                                <div class="d-inline-flex flex-wrap justify-content-end gap-1">
+                                    <a asp-action="AssignRoles"
+                                       asp-route-id="@user.Id"
+                                       class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                        <i class="bi bi-person-gear me-1"></i>Roles
+                                    </a>
+
+                                    @if (isSelf)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-secondary rounded-pill px-3 opacity-50"
+                                                disabled
+                                                title="No puedes bloquear tu propia cuenta.">
+                                            <i class="bi bi-lock me-1"></i>Bloquear
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="ToggleLockout"
+                                              asp-route-id="@user.Id"
+                                              method="post"
+                                              class="d-inline js-lockout-confirm-form"
+                                              data-username="@user.UserName"
+                                              data-locked="@user.IsLockedOut.ToString().ToLowerInvariant()">
+                                            @if (user.IsLockedOut)
+                                            {
+                                                <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                                                    <i class="bi bi-unlock me-1"></i>Desbloquear
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-3">
+                                                    <i class="bi bi-lock me-1"></i>Bloquear
+                                                </button>
+                                            }
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        $(function () {
+            $(document).on("submit", "form.js-lockout-confirm-form", function (e) {
+                e.preventDefault();
+                const form = this;
+                const userName = $(form).data("username") || "este usuario";
+                const isLocked = $(form).data("locked") === true || $(form).data("locked") === "true";
+
+                const title = isLocked ? "¿Desbloquear cuenta?" : "¿Bloquear cuenta?";
+                const text = isLocked
+                    ? "Se restaurará el acceso inmediato para «" + userName + "»."
+                    : "La cuenta «" + userName + "» no podrá iniciar sesión hasta ser desbloqueada.";
+                const confirmText = isLocked ? "Sí, desbloquear" : "Sí, bloquear";
+                const confirmColor = isLocked ? "#198754" : "#dc3545";
+
+                if (typeof Swal !== "undefined") {
+                    Swal.fire({
+                        title: title,
+                        text: text,
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: confirmColor,
+                        cancelButtonColor: "#6c757d",
+                        confirmButtonText: confirmText,
+                        cancelButtonText: "Cancelar",
+                        reverseButtons: true
+                    }).then(function (result) {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    });
+                } else if (window.confirm(text)) {
+                    form.submit();
+                }
+            });
+        });
+    </script>
+}
