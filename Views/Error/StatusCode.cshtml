@@ -1,0 +1,162 @@
+@model TechStore.Models.ErrorDetailsViewModel
+@{
+    ViewData["Title"] = $"{Model.StatusCode} - {Model.Title}";
+
+    var (iconClass, badgeBgClass, accentColor) = Model.StatusCode switch
+    {
+        401 => ("bi-person-lock", "bg-warning text-dark", "#0077b6"),
+        403 => ("bi-shield-exclamation", "bg-danger", "#b02a37"),
+        404 => ("bi-compass", "bg-info text-dark", "#0077b6"),
+        >= 500 => ("bi-exclamation-octagon", "bg-danger", "#1b263b"),
+        _ => ("bi-exclamation-triangle", "bg-secondary", "#1b263b")
+    };
+
+    var hasExceptionData = !string.IsNullOrWhiteSpace(Model.ExceptionType)
+        || !string.IsNullOrWhiteSpace(Model.ExceptionMessage)
+        || !string.IsNullOrWhiteSpace(Model.StackTrace);
+
+    var safeReturnUrl = !string.IsNullOrWhiteSpace(Model.OriginalPath) && Url.IsLocalUrl(Model.OriginalPath)
+        ? Model.OriginalPath
+        : null;
+}
+
+<section class="py-4 py-md-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-9 col-xl-8">
+            <div class="card border-0 rounded-4 shadow-lg overflow-hidden">
+                <div class="p-4 p-md-5 text-white text-center"
+                     style="background: linear-gradient(135deg, #1b263b 0%, #0077b6 100%);">
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-white bg-opacity-10 mb-3"
+                         style="width: 76px; height: 76px;">
+                        <i class="bi @iconClass fs-1 text-white"></i>
+                    </div>
+
+                    <div class="mb-2">
+                        <span class="badge @badgeBgClass rounded-pill px-4 py-2 fs-5 fw-bold shadow-sm">
+                            HTTP @Model.StatusCode
+                        </span>
+                    </div>
+
+                    <h1 class="h2 fw-bold mb-2">@Model.Title</h1>
+                    <p class="mb-0 text-white-50">
+                        TechStore — Centro de Atención y Estado del Sistema
+                    </p>
+                </div>
+
+                <div class="card-body p-4 p-md-5 text-center bg-white">
+                    <p class="lead mb-4" style="color: #1b263b;">
+                        @Model.Message
+                    </p>
+
+                    <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+                        @if (!string.IsNullOrWhiteSpace(Model.OriginalPath))
+                        {
+                            <span class="badge rounded-pill bg-light text-dark border px-3 py-2 fw-normal">
+                                <i class="bi bi-link-45deg me-1" style="color: @accentColor;"></i>
+                                Ruta solicitada: <code>@Model.OriginalPath</code>
+                            </span>
+                        }
+
+                        @if (Model.ShowRequestId)
+                        {
+                            <span class="badge rounded-pill bg-light text-dark border px-3 py-2 fw-normal">
+                                <i class="bi bi-fingerprint me-1" style="color: @accentColor;"></i>
+                                Request ID: <code>@Model.RequestId</code>
+                            </span>
+                        }
+                    </div>
+
+                    <div class="d-flex flex-wrap justify-content-center gap-3 mt-4">
+                        <a asp-controller="Home"
+                           asp-action="Index"
+                           class="btn btn-primary rounded-pill px-4 py-2 fw-semibold shadow-sm"
+                           style="background-color: #0077b6; border-color: #0077b6;">
+                            <i class="bi bi-house-door me-2"></i>Volver al inicio
+                        </a>
+
+                        <a asp-controller="Products"
+                           asp-action="Index"
+                           class="btn btn-outline-dark rounded-pill px-4 py-2 fw-semibold"
+                           style="border-color: #1b263b; color: #1b263b;">
+                            <i class="bi bi-grid me-2"></i>Ir al catálogo
+                        </a>
+
+                        @if (Model.StatusCode == 401)
+                        {
+                            <a asp-controller="Account"
+                               asp-action="Login"
+                               asp-route-returnUrl="@safeReturnUrl"
+                               class="btn btn-warning rounded-pill px-4 py-2 fw-semibold text-dark shadow-sm">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar sesión
+                            </a>
+                        }
+
+                        <a asp-controller="Contacto"
+                           asp-action="Index"
+                           class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-semibold">
+                            <i class="bi bi-envelope me-2"></i>Contactar soporte
+                        </a>
+                    </div>
+
+                    @if (Model.ShowDiagnostics && hasExceptionData)
+                    {
+                        <div class="accordion mt-5 text-start" id="errorDiagnosticsAccordion">
+                            <div class="accordion-item border rounded-4 overflow-hidden shadow-sm">
+                                <h2 class="accordion-header" id="errorDiagnosticsHeading">
+                                    <button class="accordion-button collapsed fw-semibold"
+                                            type="button"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#errorDiagnosticsCollapse"
+                                            aria-expanded="false"
+                                            aria-controls="errorDiagnosticsCollapse"
+                                            style="background-color: #f0f6ff; color: #1b263b;">
+                                        <i class="bi bi-bug-fill text-danger me-2"></i>
+                                        Panel de diagnóstico técnico (entorno Development)
+                                    </button>
+                                </h2>
+                                <div id="errorDiagnosticsCollapse"
+                                     class="accordion-collapse collapse"
+                                     aria-labelledby="errorDiagnosticsHeading"
+                                     data-bs-parent="#errorDiagnosticsAccordion">
+                                    <div class="accordion-body bg-light p-4">
+                                        @if (!string.IsNullOrWhiteSpace(Model.ExceptionType))
+                                        {
+                                            <div class="mb-3">
+                                                <div class="small text-uppercase fw-bold text-muted mb-1">Tipo de excepción</div>
+                                                <code class="d-block p-2 bg-white border rounded-3 text-danger">@Model.ExceptionType</code>
+                                            </div>
+                                        }
+
+                                        @if (!string.IsNullOrWhiteSpace(Model.ExceptionMessage))
+                                        {
+                                            <div class="mb-3">
+                                                <div class="small text-uppercase fw-bold text-muted mb-1">Mensaje</div>
+                                                <div class="p-3 bg-white border rounded-3 text-dark">@Model.ExceptionMessage</div>
+                                            </div>
+                                        }
+
+                                        @if (!string.IsNullOrWhiteSpace(Model.OriginalPath))
+                                        {
+                                            <div class="mb-3">
+                                                <div class="small text-uppercase fw-bold text-muted mb-1">Ruta original</div>
+                                                <code class="d-block p-2 bg-white border rounded-3 text-dark">@Model.OriginalPath</code>
+                                            </div>
+                                        }
+
+                                        @if (!string.IsNullOrWhiteSpace(Model.StackTrace))
+                                        {
+                                            <div>
+                                                <div class="small text-uppercase fw-bold text-muted mb-1">Stack Trace</div>
+                                                <pre class="bg-dark text-light p-3 rounded-3 mb-0 small overflow-auto" style="max-height: 340px;"><code>@Model.StackTrace</code></pre>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
