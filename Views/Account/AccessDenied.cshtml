@@ -1,0 +1,98 @@
+@{
+    ViewData["Title"] = "Acceso denegado";
+    var returnUrl = ViewBag.ReturnUrl as string;
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    var userName = isAuthenticated ? (User.Identity?.Name ?? "Usuario") : "Invitado";
+}
+
+<style>
+    .auth-hero-denied {
+        background: linear-gradient(135deg, #1b263b, #0077b6);
+    }
+
+    .auth-btn-primary {
+        background: linear-gradient(135deg, #0077b6, #00b4d8);
+        border: none;
+        color: #fff;
+    }
+
+    .auth-btn-primary:hover {
+        background: linear-gradient(135deg, #00669d, #009fc2);
+        color: #fff;
+    }
+</style>
+
+<partial name="_AlertsPartial" />
+
+<div class="row justify-content-center my-5">
+    <div class="col-12 col-md-9 col-lg-7">
+        <div class="card border-0 rounded-4 shadow-lg overflow-hidden">
+            <div class="auth-hero-denied text-white p-4 p-md-5 text-center">
+                <span class="badge rounded-pill bg-danger px-3 py-2 fs-6 mb-3">
+                    <i class="bi bi-shield-exclamation me-1"></i>
+                    Error 403
+                </span>
+                <h1 class="display-6 fw-bold mb-2">Acceso denegado</h1>
+                <p class="mb-0 opacity-75">
+                    No cuentas con los permisos necesarios para acceder a esta sección de TechStore.
+                </p>
+            </div>
+
+            <div class="card-body p-4 p-md-5 bg-white">
+                <div class="p-3 rounded-3 bg-light border mb-4">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        <i class="bi bi-person-lock fs-5" style="color: #0077b6;"></i>
+                        <span class="fw-semibold" style="color: #1b263b;">Contexto de la solicitud</span>
+                    </div>
+
+                    <p class="mb-1 text-secondary small">
+                        <strong>Usuario actual:</strong>
+                        <span>@userName</span>
+                        <span class="badge rounded-pill @(isAuthenticated ? "bg-primary" : "bg-secondary") ms-1">
+                            @(isAuthenticated ? "Sesión activa" : "Sin sesión")
+                        </span>
+                    </p>
+
+                    @if (!string.IsNullOrWhiteSpace(returnUrl))
+                    {
+                        <p class="mb-0 text-secondary small">
+                            <strong>Ruta solicitada:</strong>
+                            <code class="text-danger">@returnUrl</code>
+                        </p>
+                    }
+                </div>
+
+                <p class="text-muted mb-4">
+                    Si necesitas acceso a esta funcionalidad, comunícate con un administrador para revisar los permisos asignados a tu rol.
+                </p>
+
+                <div class="d-flex flex-wrap gap-2 justify-content-center">
+                    <a asp-controller="Home"
+                       asp-action="Index"
+                       class="btn auth-btn-primary rounded-pill px-4 py-2 fw-semibold">
+                        <i class="bi bi-house-door me-2"></i>
+                        Volver al inicio
+                    </a>
+
+                    <a asp-controller="Products"
+                       asp-action="Index"
+                       class="btn btn-outline-primary rounded-pill px-4 py-2 fw-semibold">
+                        <i class="bi bi-box-seam me-2"></i>
+                        Ver productos
+                    </a>
+
+                    @if (!isAuthenticated)
+                    {
+                        <a asp-controller="Account"
+                           asp-action="Login"
+                           asp-route-returnUrl="@returnUrl"
+                           class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-semibold">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>
+                            Iniciar sesión
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

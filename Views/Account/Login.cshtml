@@ -1,0 +1,164 @@
+@model TechStore.DTOs.Auth.LoginInput
+
+@{
+    ViewData["Title"] = "Iniciar sesión";
+}
+
+<style>
+    .auth-hero {
+        background: linear-gradient(135deg, #0077b6, #00b4d8);
+    }
+
+    .auth-btn-primary {
+        background: linear-gradient(135deg, #0077b6, #00b4d8);
+        border: none;
+        color: #fff;
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .auth-btn-primary:hover {
+        background: linear-gradient(135deg, #00669d, #009fc2);
+        color: #fff;
+        transform: translateY(-1px);
+    }
+
+    .validation-summary-valid {
+        display: none;
+    }
+
+    .validation-summary-errors ul {
+        margin-bottom: 0;
+        padding-left: 1.25rem;
+    }
+</style>
+
+<div class="auth-hero text-white rounded-4 shadow-sm p-4 mb-4">
+    <div class="d-flex align-items-center gap-3">
+        <div class="bg-white bg-opacity-25 rounded-circle p-3 d-inline-flex align-items-center justify-content-center">
+            <i class="bi bi-shield-lock fs-3"></i>
+        </div>
+        <div>
+            <h1 class="h2 fw-bold mb-1">Iniciar sesión</h1>
+            <p class="mb-0 opacity-75">Accede a tu cuenta de TechStore para explorar y gestionar el catálogo.</p>
+        </div>
+    </div>
+</div>
+
+<partial name="_AlertsPartial" />
+
+<div class="row justify-content-center my-4">
+    <div class="col-12 col-md-8 col-lg-5">
+        <div class="card border-0 rounded-4 shadow-lg overflow-hidden">
+            <div class="card-header border-0 py-3 px-4 text-white" style="background-color: #1b263b;">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-person-circle fs-5"></i>
+                    <span class="fw-semibold">Acceso a tu cuenta</span>
+                </div>
+            </div>
+
+            <div class="card-body p-4 p-md-5 bg-white">
+                <form asp-controller="Account" asp-action="Login" method="post" novalidate>
+                    <input type="hidden" asp-for="ReturnUrl" />
+
+                    <div asp-validation-summary="ModelOnly"
+                         class="alert alert-danger rounded-3 small mb-3"
+                         role="alert"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Identifier" class="form-label fw-semibold" style="color: #1b263b;">
+                            Usuario o Correo electrónico
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-secondary">
+                                <i class="bi bi-person"></i>
+                            </span>
+                            <input asp-for="Identifier"
+                                   class="form-control"
+                                   autocomplete="username"
+                                   placeholder="Ingresa tu usuario o correo"
+                                   autofocus />
+                        </div>
+                        <span asp-validation-for="Identifier" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label fw-semibold" style="color: #1b263b;">
+                            Contraseña
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light text-secondary">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            <input asp-for="Password"
+                                   id="loginPassword"
+                                   class="form-control"
+                                   autocomplete="current-password"
+                                   placeholder="Ingresa tu contraseña" />
+                            <button type="button"
+                                    class="btn btn-outline-secondary"
+                                    data-auth-password-toggle="loginPassword"
+                                    aria-label="Mostrar u ocultar contraseña">
+                                <i class="bi bi-eye"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <div class="form-check mb-4">
+                        <input asp-for="RememberMe" class="form-check-input" />
+                        <label asp-for="RememberMe" class="form-check-label text-secondary">
+                            Recordarme
+                        </label>
+                    </div>
+
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn auth-btn-primary btn-lg rounded-pill fw-semibold shadow-sm">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>
+                            Iniciar sesión
+                        </button>
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <p class="text-center text-muted mb-0">
+                        ¿No tienes una cuenta todavía?
+                        <a asp-controller="Account"
+                           asp-action="Register"
+                           asp-route-returnUrl="@Model.ReturnUrl"
+                           class="fw-semibold text-decoration-none"
+                           style="color: #0077b6;">
+                            Crear cuenta
+                        </a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            document.querySelectorAll("[data-auth-password-toggle]").forEach(function (button) {
+                button.addEventListener("click", function () {
+                    var targetId = button.getAttribute("data-auth-password-toggle");
+                    var input = document.getElementById(targetId);
+                    var icon = button.querySelector("i");
+
+                    if (!input) {
+                        return;
+                    }
+
+                    var isPassword = input.type === "password";
+                    input.type = isPassword ? "text" : "password";
+
+                    if (icon) {
+                        icon.classList.toggle("bi-eye", !isPassword);
+                        icon.classList.toggle("bi-eye-slash", isPassword);
+                    }
+                });
+            });
+        })();
+    </script>
+}
