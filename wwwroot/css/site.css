@@ -59,13 +59,29 @@ body {
 }
 
 .techstore-navbar .nav-link.btn {
+    border: 0 !important;
+    border-color: transparent !important;
     border-radius: 999px;
     padding: 0.42rem 0.9rem;
+    box-shadow: none !important;
     transition: background-color 0.15s ease, transform 0.15s ease;
 }
 
-.techstore-navbar .nav-link.btn:hover {
-    background-color: rgba(255, 255, 255, 0.85);
+.techstore-navbar .nav-link.btn:hover,
+.techstore-navbar .nav-link.btn:focus,
+.techstore-navbar .nav-link.btn:active,
+.techstore-navbar .nav-link.btn.show {
+    background-color: rgba(255, 255, 255, 0.88);
+    border: 0 !important;
+    border-color: transparent !important;
+    outline: none !important;
+    box-shadow: none !important;
+    color: var(--ts-navy) !important;
+}
+
+.techstore-navbar .btn:focus,
+.techstore-navbar .btn:active:focus {
+    box-shadow: none;
 }
 
 .techstore-dropdown {
@@ -198,6 +214,43 @@ body {
 
 .carrusel-anuncio {
     margin-bottom: 60px;
+}
+
+.featured-products-carousel {
+    margin-bottom: 42px;
+}
+
+.featured-banner-slide {
+    background: linear-gradient(135deg, var(--ts-navy) 0%, var(--ts-primary) 55%, var(--ts-accent) 100%);
+    min-height: 290px;
+    transition: transform 0.25s ease;
+}
+
+.featured-banner-link:hover .featured-banner-slide {
+    filter: brightness(1.03);
+}
+
+.featured-banner-img-wrap {
+    background-color: #ffffff;
+    border-radius: 1rem;
+    padding: 1rem;
+    height: 220px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.featured-banner-img {
+    max-height: 190px;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    transition: transform 0.25s ease;
+}
+
+.featured-banner-link:hover .featured-banner-img {
+    transform: scale(1.04);
 }
 
 .componente-decorativo {

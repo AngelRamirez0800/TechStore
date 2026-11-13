@@ -11,14 +11,14 @@
         ? new HeroBannerViewModel(
             title: "Bienvenido a TechStore",
             subtitle: "Tu tienda de confianza en tecnología: laptops, smartphones, audio y accesorios al mejor precio, con la calidad que buscas.",
-            eyebrow: "Catálogo Tecnológico",
+            eyebrow: null,
             ctaText: "Ver productos",
             ctaController: "Products",
             ctaAction: "Index")
         : new HeroBannerViewModel(
             title: "Bienvenido a TechStore",
             subtitle: "Tu tienda de confianza en tecnología: laptops, smartphones, audio y accesorios al mejor precio, con la calidad que buscas.",
-            eyebrow: "Innovación y Tecnología",
+            eyebrow: null,
             ctaText: isAuthenticated ? "Contáctenos" : "Iniciar sesión",
             ctaController: isAuthenticated ? "Contacto" : "Account",
             ctaAction: isAuthenticated ? "Index" : "Login");
@@ -26,15 +26,7 @@
 
 <partial name="_HeroBanner" model="heroModel" />
 
-<img class="componente-decorativo"
-     src="~/Images/Componentes/descargam - copia.jpeg"
-     alt="componente1" />
-
-@if (isAuthenticated && canReadProducts)
-{
-    <vc:catalog-stats />
-}
-else if (!isAuthenticated)
+@if (!isAuthenticated)
 {
     <div class="card border-0 shadow-sm guest-cta-card mb-4">
         <div class="card-body p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
@@ -151,12 +143,108 @@ else if (!isAuthenticated)
 
 @if (Model != null && Model.Any())
 {
-    <div class="productos-inicio row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-4">
-        @foreach (var product in Model)
+    var featuredList = Model.ToList();
+    <div id="featuredProductsCarousel"
+         class="featured-products-carousel carousel slide rounded-4 overflow-hidden shadow-sm"
+         data-bs-ride="carousel">
+
+        @if (featuredList.Count > 1)
         {
-            <div class="col">
-                <partial name="_ProductCard" model="product" />
+            <div class="carousel-indicators">
+                @for (var i = 0; i < featuredList.Count; i++)
+                {
+                    <button type="button"
+                            data-bs-target="#featuredProductsCarousel"
+                            data-bs-slide-to="@i"
+                            class="@(i == 0 ? "active" : string.Empty)"
+                            aria-current="@(i == 0 ? "true" : "false")"
+                            aria-label="Producto destacado @(i + 1)"></button>
+                }
             </div>
+        }
+
+        <div class="carousel-inner">
+            @for (var i = 0; i < featuredList.Count; i++)
+            {
+                var product = featuredList[i];
+                var primaryImage = product.Images?.OrderBy(img => img.ImageNumber).FirstOrDefault();
+                var imagePath = primaryImage != null
+                    ? Url.Content("~/" + primaryImage.ImagePath.TrimStart('/'))
+                    : Url.Content("~/Images/Componentes/logo.png");
+                var primaryCategory = product.Categories?
+                    .Where(c => c.IsActive)
+                    .OrderBy(c => c.Name)
+                    .FirstOrDefault()?.Name;
+
+                <div class="carousel-item @(i == 0 ? "active" : string.Empty)">
+                    <a asp-controller="Products"
+                       asp-action="Index"
+                       class="featured-banner-link d-block text-decoration-none text-white"
+                       aria-label="Explorar @product.Name en Productos">
+                        <div class="featured-banner-slide p-4 p-md-5 d-flex align-items-center">
+                            <div class="row w-100 align-items-center g-4 mx-0">
+                                <div class="col-12 col-md-7 text-start">
+                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                                        <span class="badge bg-warning text-dark rounded-pill px-3 py-1 fw-semibold">
+                                            <i class="bi bi-star-fill me-1"></i>Destacado
+                                        </span>
+                                        @if (!string.IsNullOrWhiteSpace(primaryCategory))
+                                        {
+                                            <span class="badge bg-light text-dark rounded-pill px-3 py-1">
+                                                @primaryCategory
+                                            </span>
+                                        }
+                                    </div>
+
+                                    <h3 class="display-6 fw-bold text-white mb-2">@product.Name</h3>
+
+                                    @if (!string.IsNullOrWhiteSpace(product.Description))
+                                    {
+                                        var summary = product.Description.Length > 140
+                                            ? product.Description[..137] + "..."
+                                            : product.Description;
+                                        <p class="text-white-75 mb-3">@summary</p>
+                                    }
+
+                                    <div class="d-flex flex-wrap align-items-center gap-3">
+                                        <span class="fs-4 fw-bold text-white">$@product.Price.ToString("N2")</span>
+                                        <span class="btn btn-light btn-sm rounded-pill px-3 fw-semibold text-primary shadow-sm">
+                                            Ver en Productos <i class="bi bi-arrow-right ms-1"></i>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="col-12 col-md-5">
+                                    <div class="featured-banner-img-wrap shadow-sm">
+                                        <img src="@imagePath"
+                                             alt="@product.Name"
+                                             class="featured-banner-img" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            }
+        </div>
+
+        @if (featuredList.Count > 1)
+        {
+            <button class="carousel-control-prev"
+                    type="button"
+                    data-bs-target="#featuredProductsCarousel"
+                    data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Anterior</span>
+            </button>
+
+            <button class="carousel-control-next"
+                    type="button"
+                    data-bs-target="#featuredProductsCarousel"
+                    data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Siguiente</span>
+            </button>
         }
     </div>
 }
@@ -169,7 +257,8 @@ else
 }
 
 <div id="carouselExample"
-     class="carrusel-anuncio carousel slide rounded-4 overflow-hidden shadow-sm">
+     class="carrusel-anuncio carousel slide rounded-4 overflow-hidden shadow-sm"
+     data-bs-ride="carousel">
 
     <div class="carousel-inner">
 
