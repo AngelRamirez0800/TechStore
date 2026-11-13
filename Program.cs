@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using TechStore.Data;
 using TechStore.Data.Repositories;
+using TechStore.Data.Seeders;
 using TechStore.Data.Storage;
 using TechStore.Interfaces;
 using TechStore.Logging;
@@ -8,7 +9,18 @@ using TechStore.Security.Authorization;
 using TechStore.Security.Identity;
 using TechStore.Services;
 
-var builder = WebApplication.CreateBuilder(args);
+var hasResetCatalogSeedFlag = args.Any(arg =>
+    string.Equals(arg, "--reset-catalog-seed", StringComparison.OrdinalIgnoreCase));
+var hasSeedOnlyFlag = args.Any(arg =>
+    string.Equals(arg, "--seed-only", StringComparison.OrdinalIgnoreCase));
+
+var builderArgs = args
+    .Where(arg =>
+        !string.Equals(arg, "--reset-catalog-seed", StringComparison.OrdinalIgnoreCase) &&
+        !string.Equals(arg, "--seed-only", StringComparison.OrdinalIgnoreCase))
+    .ToArray();
+
+var builder = WebApplication.CreateBuilder(builderArgs);
 
 // Logging nativo, auditoría MVC y manejo de excepciones.
 builder.AddAuditAndLogging();
@@ -24,6 +36,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 
 builder.Services.AddIdentityConfiguration();
 builder.Services.AddAuthorizationPolicies();
+builder.Services.AddCatalogSeeder();
 
 builder.Services.AddScoped<IProductsRepository, ProductsRepository>();
 builder.Services.AddScoped<ICategoryRespository, CategoryRepository>();
@@ -59,6 +72,13 @@ using (var scope = app.Services.CreateScope())
 }
 
 await app.SeedIdentityAsync();
+await app.SeedCatalogAsync(resetExistingData: hasResetCatalogSeedFlag);
+
+if (hasSeedOnlyFlag)
+{
+    app.Logger.LogInformation("Ejecución finalizada en modo --seed-only (reset={ResetCatalog}).", hasResetCatalogSeedFlag);
+    return;
+}
 
 // Configure the HTTP request pipeline (activo en todos los entornos, incluido Development).
 app.UseGlobalExceptionHandling();
