@@ -37,7 +37,7 @@ else
                                 </span>
                             }
                             <span class="badge bg-dark bg-opacity-75 position-absolute top-0 end-0 m-2 rounded-pill">
-                                #@(i + 1) / @orderedImages.Count
+                                @(i + 1) / @orderedImages.Count
                             </span>
                             <img src="@normalizedPath"
                                  alt="@Model.Name - Imagen @img.ImageNumber"
@@ -70,7 +70,7 @@ else
                 <div class="col">
                     <div class="card h-100 border shadow-sm product-gallery-thumb @(i == 0 ? "border-primary" : string.Empty)">
                         <button type="button"
-                                class="btn p-2 border-0 bg-transparent text-center w-100"
+                                class="btn product-gallery-thumb-btn p-2 border-0 bg-transparent text-center w-100"
                                 data-bs-target="#@carouselId"
                                 data-bs-slide-to="@i"
                                 aria-label="Ver imagen @img.ImageNumber">

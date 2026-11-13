@@ -26,7 +26,7 @@ body {
 }
 
 /* Estandarización Global de Botones */
-.btn:not(.btn-close) {
+.btn:not(.btn-close):not(.product-gallery-thumb-btn) {
     border-radius: 999px;
     font-weight: 500;
     transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
@@ -354,6 +354,21 @@ body {
 .product-gallery-thumb:hover {
     border-color: var(--ts-primary) !important;
     transform: translateY(-2px);
+}
+
+.product-gallery-thumb .btn.product-gallery-thumb-btn,
+.product-gallery-thumb .btn.product-gallery-thumb-btn:hover,
+.product-gallery-thumb .btn.product-gallery-thumb-btn:focus,
+.product-gallery-thumb .btn.product-gallery-thumb-btn:active,
+.product-gallery-thumb .btn.product-gallery-thumb-btn:active:focus,
+.product-gallery-thumb .btn.product-gallery-thumb-btn:focus-visible {
+    border-radius: 0.75rem;
+    box-shadow: none !important;
+    outline: none !important;
+}
+
+.product-gallery-thumb:has(.product-gallery-thumb-btn:focus-visible) {
+    box-shadow: 0 0 0 0.2rem rgba(0, 119, 182, 0.25) !important;
 }
 
 /* Badges de Stock */

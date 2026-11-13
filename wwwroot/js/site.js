@@ -95,5 +95,19 @@ $(function () {
 
             updateCount();
         });
+
+        document.querySelectorAll(".product-gallery").forEach(function (gallery) {
+            const carousel = gallery.querySelector(".carousel");
+            const thumbs = gallery.querySelectorAll(".product-gallery-thumb");
+            if (!carousel || !thumbs.length) {
+                return;
+            }
+
+            carousel.addEventListener("slide.bs.carousel", function (event) {
+                thumbs.forEach(function (thumb, index) {
+                    thumb.classList.toggle("border-primary", index === event.to);
+                });
+            });
+        });
     });
 })();
