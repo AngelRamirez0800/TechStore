@@ -1,9 +1,9 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using TechStore.Constants;
 using TechStore.DTOs.Admin;
 using TechStore.Interfaces;
+using TechStore.Security.Authorization;
 
 namespace TechStore.Controllers
 {

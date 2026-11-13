@@ -1,8 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
-using TechStore.Constants;
 
-namespace TechStore.Extensions
+namespace TechStore.Security.Authorization
 {
     /// <summary>
     /// Extensiones para registrar las políticas de autorización basadas en roles y permisos de TechStore.

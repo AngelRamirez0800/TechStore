@@ -4,7 +4,7 @@ using TechStore.Data.Seeders;
 using TechStore.Interfaces;
 using TechStore.Services;
 
-namespace TechStore.Extensions
+namespace TechStore.Security.Identity
 {
     /// <summary>
     /// Extensiones de configuración para ASP.NET Core Identity, cookies de autenticación y seed inicial.
@@ -68,7 +68,7 @@ namespace TechStore.Extensions
         {
             await using var scope = services.CreateAsyncScope();
             var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
-            var logger = loggerFactory.CreateLogger("TechStore.Extensions.IdentityServiceExtensions");
+            var logger = loggerFactory.CreateLogger("TechStore.Security.Identity.IdentityServiceExtensions");
 
             try
             {

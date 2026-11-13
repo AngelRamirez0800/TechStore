@@ -1,4 +1,4 @@
-namespace TechStore.Helpers
+namespace TechStore.Services
 {
     /// <summary>
     /// Helper compartido para normalizar y aplicar filtros multiselección de catálogo y estado.

@@ -1,7 +1,7 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
-using TechStore.Constants;
 using TechStore.Interfaces;
+using TechStore.Security.Authorization;
 
 namespace TechStore.Data.Seeders
 {

@@ -7,9 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Logging;
-using TechStore.Logging;
 
-namespace TechStore.Filters
+namespace TechStore.Logging
 {
     /// <summary>
     /// Filtro global de auditoría MVC que registra ejecución, usuario autenticado, argumentos seguros,

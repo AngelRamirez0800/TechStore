@@ -7,8 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using TechStore.Logging;
-using TechStore.Middleware;
 using TechStore.Models;
+using TechStore.Security.Middleware;
 
 namespace TechStore.Controllers
 {

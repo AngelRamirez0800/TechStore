@@ -2,8 +2,10 @@ using Microsoft.EntityFrameworkCore;
 using TechStore.Data;
 using TechStore.Data.Repositories;
 using TechStore.Data.Storage;
-using TechStore.Extensions;
 using TechStore.Interfaces;
+using TechStore.Logging;
+using TechStore.Security.Authorization;
+using TechStore.Security.Identity;
 using TechStore.Services;
 
 var builder = WebApplication.CreateBuilder(args);

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using TechStore.Constants;
+using TechStore.Security.Authorization;
 using TechStore.DTOs.Auth;
 
 namespace TechStore.Controllers

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using TechStore.Logging;
 
-namespace TechStore.Middleware
+namespace TechStore.Security.Middleware
 {
     /// <summary>
     /// Claves compartidas en <see cref="HttpContext.Items"/> entre <see cref="GlobalExceptionMiddleware"/>

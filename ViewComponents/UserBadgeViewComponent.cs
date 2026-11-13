@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
-using TechStore.Constants;
+using TechStore.Security.Authorization;
 
 namespace TechStore.ViewComponents
 {

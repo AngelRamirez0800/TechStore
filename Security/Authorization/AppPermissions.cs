@@ -1,4 +1,4 @@
-namespace TechStore.Constants
+namespace TechStore.Security.Authorization
 {
     /// <summary>
     /// Descriptor de un permiso granular usado en políticas de autorización y en la UI de administración.

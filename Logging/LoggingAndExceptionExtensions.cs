@@ -2,11 +2,9 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using TechStore.Filters;
-using TechStore.Logging;
-using TechStore.Middleware;
+using TechStore.Security.Middleware;
 
-namespace TechStore.Extensions
+namespace TechStore.Logging
 {
     /// <summary>
     /// Métodos de extensión para registrar el sistema nativo de logging, auditoría MVC

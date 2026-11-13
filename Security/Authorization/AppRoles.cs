@@ -1,4 +1,4 @@
-namespace TechStore.Constants
+namespace TechStore.Security.Authorization
 {
     /// <summary>
     /// Nombres canónicos de los roles base del sistema.
