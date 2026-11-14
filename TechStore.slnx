@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="TechStore.csproj" />
+  <Project Path="TechStore.Tests/TechStore.Tests.csproj" Id="e7f5a5a5-34a2-478d-8e7e-dea39fc23ffb" />
 </Solution>

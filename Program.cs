@@ -42,6 +42,7 @@ builder.Services.AddScoped<IProductsRepository, ProductsRepository>();
 builder.Services.AddScoped<ICategoryRespository, CategoryRepository>();
 
 builder.Services.AddScoped<IProductsService, ProductsService>();
+builder.Services.AddScoped<IProductReportService, ProductReportService>();
 builder.Services.AddScoped<IProductApplicationService, ProductApplicationService>();
 
 builder.Services.AddScoped<IProductQueries>(provider =>
