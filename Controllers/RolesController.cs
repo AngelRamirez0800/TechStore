@@ -10,6 +10,7 @@ namespace TechStore.Controllers
     /// <summary>
     /// Controlador administrativo para la gestión de roles, permisos por Role Claims y usuarios.
     /// </summary>
+    [Authorize(Roles = "Admin")]
     [Authorize]
     public class RolesController : Controller
     {

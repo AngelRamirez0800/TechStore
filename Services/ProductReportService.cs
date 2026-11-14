@@ -81,6 +81,7 @@ namespace TechStore.Services
                             {
                                 table.ColumnsDefinition(columns =>
                                 {
+                                    columns.RelativeColumn(2f);
                                     columns.RelativeColumn(2.5f);
                                     columns.RelativeColumn(2);
                                     columns.RelativeColumn(1);
@@ -92,6 +93,7 @@ namespace TechStore.Services
                                 table.Header(header =>
                                 {
                                     HeaderCell(header, "PRODUCTO");
+                                    HeaderCell(header, "DESCRIPCIÓN");
                                     HeaderCell(header, "CATEGORÍAS");
                                     HeaderCell(header, "PRECIO");
                                     HeaderCell(header, "STOCK");
@@ -107,6 +109,7 @@ namespace TechStore.Services
                                         : "Sin categoría";
 
                                     BodyCell(table, product.Name);
+                                    BodyCell(table, product.Description ?? "Sin descripción");
                                     BodyCell(table, categories);
                                     BodyCell(table, $"${product.Price:N2}");
                                     BodyCell(table, product.Stock.ToString());

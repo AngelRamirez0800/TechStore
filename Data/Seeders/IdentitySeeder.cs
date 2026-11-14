@@ -32,12 +32,18 @@ namespace TechStore.Data.Seeders
                 syncMissingPermissions: true);
 
             await EnsureRoleAsync(
+                AppRoles.Seller,
+                AppPermissions.DefaultSellerPermissions,
+                syncMissingPermissions: false);
+
+            await EnsureRoleAsync(
                 AppRoles.Client,
                 AppPermissions.DefaultClientPermissions,
                 syncMissingPermissions: false);
 
             await EnsureUserAsync("Angel", "angel@techstore.com", "Angel-247", AppRoles.Client);
             await EnsureUserAsync("Daniel", "daniel@techstore.com", "Daniel-0800", AppRoles.Admin);
+            await EnsureUserAsync("Jaime", "jaime@techstore.com", "Jaime-456", AppRoles.Seller);
         }
 
         private async Task EnsureRoleAsync(

@@ -43,6 +43,14 @@ namespace TechStore.Security.Authorization
 
         public static readonly IReadOnlyList<string> AllKeys = All.Select(permission => permission.Key).ToArray();
 
+        public static readonly IReadOnlyList<string> DefaultSellerPermissions =
+        [
+            ProductsRead,
+            ProductsCreate,
+            ProductsEdit,
+            CategoriesRead
+        ];
+
         public static readonly IReadOnlyList<string> DefaultClientPermissions =
         [
             ProductsRead,

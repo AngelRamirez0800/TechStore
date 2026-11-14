@@ -6,9 +6,10 @@ namespace TechStore.Security.Authorization
     public static class AppRoles
     {
         public const string Admin = "Admin";
+        public const string Seller = "Seller";
         public const string Client = "Client";
 
-        public static readonly IReadOnlyList<string> All = [Admin, Client];
+        public static readonly IReadOnlyList<string> All = [Admin, Seller, Client];
 
         public static bool IsBuiltIn(string? roleName) =>
             !string.IsNullOrWhiteSpace(roleName) &&
